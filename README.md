@@ -51,3 +51,4 @@ This will start the Flask service and make the app available at http://localhost
 ## License
 
 This project is licensed under the Apache 2.0 License. See the [LICENSE](https://github.com/ParisNeo/Gpt4All-webui/blob/main/LICENSE) file for details.
+This project is licensed under the Apache 2.0 License. See the [LICENSE](https://github.com/ParisNeo/Gpt4All-webui/blob/main/LICENSE) file for details.
