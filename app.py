@@ -12,7 +12,7 @@ def index():
 @app.route('/bot', methods=['POST'])
 def bot():
     message = request.json['message']
-    response = {'message': f'You said: {message}. I am a bot.'}
+    response = m.prompt(message)
     return jsonify(response)
 
 
