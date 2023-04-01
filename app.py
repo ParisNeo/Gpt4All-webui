@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from nomic.gpt4all import GPT4All
 m = GPT4All()
 m.open()
@@ -14,3 +14,7 @@ def bot():
     message = request.json['message']
     response = {'message': f'You said: {message}. I am a bot.'}
     return jsonify(response)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

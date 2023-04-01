@@ -8,7 +8,19 @@
 This is a Flask web application that provides a chat UI for interacting with the GPT4All chatbot. GPT4All is a language model built by Nomic-AI, a company specializing in natural language processing. The app uses Nomic-AI's API to communicate with the GPT4All model, which runs locally on the user's PC. The app allows users to send messages to the chatbot and view its responses in real-time. Additionally, users can export the entire chat history in text or JSON format.
 
 
-**Note for Windows users:** At the moment, Nomic-AI has not provided a wheel for Windows, so you will need to use the app with the Windows Subsystem for Linux (WSL). We apologize for any inconvenience this may cause.
+**Note for Windows users:** At the moment, Nomic-AI has not provided a wheel for Windows, so you will need to use the app with the Windows Subsystem for Linux (WSL). To install WSL, follow these steps:
+
+1. Open the Windows Features settings (you can find this by searching for "Windows Features" in the Start menu).
+
+2. Enable the "Windows Subsystem for Linux" feature.
+
+3. Restart your computer when prompted.
+
+4. Install a Linux distribution from the Microsoft Store (e.g., Ubuntu).
+
+5. Open the Linux distribution and follow the prompts to create a new user account.
+
+We apologize for any inconvenience this may cause. W
 
 
 ## Installation
