@@ -10,7 +10,7 @@ chatForm.addEventListener('submit', event => {
     userInput.value = '';
     
     // add user message to chat window
-    addMessage('user', message);
+    addUserMessage('User', message);
     
     // send user message to Flask back-end using fetch API
     fetch('/bot', {
@@ -23,17 +23,38 @@ chatForm.addEventListener('submit', event => {
     .then(response => response.json())
     .then(data => {
         // add bot message to chat window
-        addMessage('bot', data);
+        addBotMessage('Bot', data);
     })
     .catch(error => console.error(error));
 });
 
-function addMessage(sender, message) {
+function addUserMessage(sender, message) {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
+    messageElement.classList.add('user-message');
     messageElement.classList.add(sender);
     const senderElement = document.createElement('div');
-    senderElement.classList.add('sender');
+    senderElement.classList.add('user-sender');
+    senderElement.textContent = sender;
+    
+    const messageTextElement = document.createElement('div');
+    messageTextElement.classList.add('message-text');
+    messageTextElement.textContent = message;
+    
+    messageElement.appendChild(senderElement);
+    messageElement.appendChild(messageTextElement);
+    chatWindow.appendChild(messageElement);
+    
+    // scroll to bottom of chat window
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+
+function addBotMessage(sender, message) {
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('bot-message');
+    messageElement.classList.add(sender);
+    const senderElement = document.createElement('div');
+    senderElement.classList.add('bot-sender');
     senderElement.textContent = sender;
     
     const messageTextElement = document.createElement('div');

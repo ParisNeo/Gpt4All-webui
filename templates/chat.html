@@ -8,6 +8,9 @@
     <header>
         <h1>Chat with GPT4All</h1>
     </header>
+    <div id="toolbar">
+        <button id="export-button">Export</button>
+    </div>
     <main id="chat-window">
         <!-- chat messages will be added dynamically here -->
     </main>
@@ -17,8 +20,6 @@
             <button type="submit">Send</button>
         </form>
     </footer>
-
-    <button id="export-button" type="button">Export</button>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 
 </body>
