@@ -7,6 +7,10 @@
 
 This is a Flask web application that provides a chat UI for interacting with the GPT4All chatbot. The app allows users to send messages to the chatbot and view its responses in real-time. Additionally, users can export the entire chat history in text or JSON format.
 
+
+**Note for Windows users:** At the moment, Nomic-AI has not provided a wheel for Windows, so you will need to use the app with the Windows Subsystem for Linux (WSL). We apologize for any inconvenience this may cause.
+
+
 ## Installation
 
 To install the app, follow these steps:
@@ -25,11 +29,18 @@ cd Gpt4All-webui
 
 3. Run the appropriate installation script for your platform:
 
-- On Windows:
+- On Windows with WSL:
+
+  ```
+  ./install.sh
+  ```
+
+- When Nomic add windows support you would be able to use this :
 
   ```
   install.bat
   ```
+
 
 - On Linux or macOS:
 
