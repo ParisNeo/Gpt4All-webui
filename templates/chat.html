@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat with Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Chat with Bot</h1>
+    </header>
+    <main id="chat-window">
+        <!-- chat messages will be added dynamically here -->
+    </main>
+    <footer>
+        <form id="chat-form">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button type="submit">Send</button>
+        </form>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <button id="export-button" type="button">Export</button>
+
+</body>
+</html>
