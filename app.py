@@ -16,7 +16,7 @@ def bot():
     message = request.json['message']
     print(f"Received message {message}")
     
-    response = m.prompt(message)
+    response = m.prompt(message, write_to_stdout=True)
     print(f"response : {response}")
     print(type(response))
     return jsonify(response)

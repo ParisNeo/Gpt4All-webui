@@ -23,7 +23,7 @@ chatForm.addEventListener('submit', event => {
     .then(response => response.json())
     .then(data => {
         // add bot message to chat window
-        addMessage('bot', data.message);
+        addMessage('bot', data);
     })
     .catch(error => console.error(error));
 });
