@@ -739,3 +739,12 @@ video {
     width: 20%;
   }
 }
+
+.collapsible-header {
+  cursor: pointer;
+}
+
+.collapsible-content {
+  display: none;
+}
+
