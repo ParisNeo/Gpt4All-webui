@@ -17,7 +17,7 @@ The model used by GPT4ALL has been fine-tuned using the LORA technique on LLAMA 
 
 It is important to understand that we are not responsible for any misuse of this tool. Please use it responsibly and at your own risk. While we hope that Nomic will address this issue in the future by providing clean weights that can be used freely, for now, this model is intended for testing purposes only.
 
-
+## UI screenshot
 ![image](https://user-images.githubusercontent.com/827993/229349273-221b6bfc-475e-4be3-8d98-fb8f0036df8e.png)
 
 
