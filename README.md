@@ -83,7 +83,7 @@ To run the Flask server, execute the following command:
 python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
 ```
 ## Options
-- `--port`: the port on which to run the server (default: 5000)
+- `--port`: the port on which to run the server (default: 9600)
 - `--host`: the host address on which to run the server (default: localhost)
 - `--temp`: the sampling temperature for the model (default: 0.1)
 - `--n-predict`: the number of tokens to predict at a time (default: 128)
@@ -95,7 +95,7 @@ python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] 
 
 Note: All options are optional, and have default values.
 
-Once the server is running, open your web browser and navigate to http://localhost:5000 to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
+Once the server is running, open your web browser and navigate to http://localhost:9600 (or http://your host name:your port number if you have selected different values for those) to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
 
 
 Make sure to adjust the default values and descriptions of the options to match your specific application.
