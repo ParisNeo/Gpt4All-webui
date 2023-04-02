@@ -179,41 +179,6 @@ link.download = 'chat.txt';
 link.click();
 }
 
-function add_collapsible_div(text){
-    output = `
-    <div class="collapsible">
-    <div class="collapsible-header">
-      <h3 style='text-decoration: underline;'>Click to Expand/Collapse</h3>
-    </div>
-    <div class="collapsible-content">
-      <p>${text}</p>
-    </div>
-  </div>`;
-  return output
-} 
-
-welcome_message = `
-Note:</b><br>
-This is a very early testing Web UI of GPT4All chatbot.<br>
-Bre in mind that this is a 7B parameters model running on your own PC's CPU. Its is literally 24 times smaller than gpt3 in terms of parameters number.<br>
-It is still new and is not yet as powerful as GPT3.5 or GPT4. But still can be useful for many applications.<br>
-Any feedback and contribution is welcomed.<br>
-This Webui is a binding to the Gpt4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.<br>
-<b>
-It is advised to have a single instruct response interaction then you press new conversation as this model is poor in multiple interactions.</b>
-<br>Examples:<br>
-`+
-add_collapsible_div(
-`
-A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>
-Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.<br>
-Reverse a string in python.<br>
-List 10 dogs.<br>
-Write me a poem about the fall of Julius Ceasar into a ceasar salad in iambic pentameter.<br>
-What is a three word topic describing the following keywords: baseball, football, soccer:<br>
-`)
-
-addBotMessage("GPT4ALL",welcome_message);
 
 
 const newDiscussionBtn = document.querySelector('#new-discussion-btn');
@@ -240,18 +205,46 @@ newDiscussionBtn.addEventListener('click', () => {
   }
 });
 
-function update_collapsibles(){
-    // Code for collapsable text
-    const collapsibles = document.querySelectorAll('.collapsible');
 
-    collapsibles.forEach(collapsible => {
-        print("Found collapsible")
-    const header = collapsible.querySelector('.collapsible-header');
-    const content = collapsible.querySelector('.collapsible-content');
 
-    header.addEventListener('click', () => {
-        content.classList.toggle('active');
-    });
-    });
+function add_collapsible_div(text, id){
+    output = `
+    <div class="collapsible">
+    <div class="collapsible-header" click=uncollapse('${id}')>
+      <h3 style='text-decoration: underline;' >Click to Expand/Collapse</h3>
+    </div>
+    <div id="${id}" class="collapsible-content">
+      <p>${text}</p>
+    </div>
+  </div>`;
+  return output
+} 
+
+welcome_message = `
+Note:</b><br>
+<code>This is a very early testing Web UI of GPT4All chatbot.
+<br>Keep in mind that this is a 7B parameters model running on your own PC's CPU. It is literally 24 times smaller than GPT-3 in terms of parameter count.
+<br>While it is still new and not as powerful as GPT-3.5 or GPT-4, it can still be useful for many applications.
+<br>Any feedback and contribution is welcomed.
+<br>This Web UI is a binding to the GPT4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.</code>
+
+<br>Examples:<br>
+<code>
+- A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>
+- Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.<br>
+- Reverse a string in python.<br>
+- List 10 dogs.<br>
+- Write me a poem about the fall of Julius Ceasar into a ceasar salad in iambic pentameter.<br>
+- What is a three word topic describing the following keywords: baseball, football, soccer:<br>
+</code>
+`
+
+addBotMessage("GPT4ALL",welcome_message);
+
+// Code for collapsable text
+const collapsibles = document.querySelectorAll('.collapsible');
+function uncollapse(id){
+    console.log("uncollapsing")
+    const content = document.querySelector(`#${id}`);
+    content.classList.toggle('active');
 }
-setTimeout(update_collapsibles,1000);
