@@ -85,7 +85,7 @@ set DS_BUILD_OPS=0
 set DS_BUILD_AIO=0
 python -m pip install pip --upgrade
 python -m pip install -r requirements.txt
-python -m pip install deepspeed
+python -m pip install nomic
 if %ERRORLEVEL% neq 0 (
     echo Failed to install required packages. Please check your internet connection and try again.
     pause

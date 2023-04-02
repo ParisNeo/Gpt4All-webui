@@ -54,6 +54,7 @@ export DS_BUILD_AIO=0
 python3.10 -m pip install pip --upgrade
 
 
+python3.10 -m pip install -r requirements.txt
 echo "Installing nomic library for eazy and direct use of GPT4All..."
 python3.10 -m pip install nomic
 
