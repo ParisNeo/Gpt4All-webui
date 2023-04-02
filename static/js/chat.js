@@ -12,7 +12,7 @@ chatForm.addEventListener('submit', event => {
     // add user message to chat window
     addUserMessage('User', message);
     messageTextElement = addBotMessage('GPT4ALL', '');
-    
+    last_reception_is_f=false;
 
     fetch('/bot', {
         method: 'POST',
@@ -44,7 +44,25 @@ chatForm.addEventListener('submit', event => {
                 if (result.done) {
                     return;
                 }
-                messageTextElement.innerHTML += textDecoder.decode(result.value);
+                text = textDecoder.decode(result.value);
+                for (const char of text) {
+                    if (last_reception_is_f){
+                      // start a new message
+                      messageTextElement = addBotMessage('GPT4ALL', '');
+                      last_reception_is_f = false;
+                    }
+
+                    if (char === '\f') {
+                        last_reception_is_f = true;                    
+                    }
+                    else{
+                        txt = messageTextElement.innerHTML
+                        txt += char
+                        messageTextElement.innerHTML = txt;
+                    }
+                    // scroll to bottom of chat window
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                  }
                 readStream();
             });
         }
@@ -108,14 +126,23 @@ exportButton.addEventListener('click', () => {
         const messageText = messageTextElement.textContent;
         return { sender, messageText };
         });
-    const exportFormat = 'text'; // replace with desired export format
+    const exportFormat = 'json'; // replace with desired export format
 
     if (exportFormat === 'text') {
         const exportText = messages.map(({ sender, messageText }) => `${sender}: ${messageText}`).join('\n');
         downloadTextFile(exportText);
     } else if (exportFormat === 'json') {
-        const exportJson = JSON.stringify(messages);
-        downloadJsonFile(exportJson);
+        fetch('/export')
+        .then(response => response.json())
+        .then(data => {
+          // Do something with the data, such as displaying it on the page
+          console.log(data);
+          downloadJsonFile(data);
+        })
+        .catch(error => {
+          // Handle any errors that occur
+          console.error(error);
+        });
     } else {
         console.error(`Unsupported export format: ${exportFormat}`);
     }
@@ -140,7 +167,7 @@ link.download = 'chat.txt';
 link.click();
 }
 
-addBotMessage("GPT4ALL","Hello there, I am GPT4ALL. Ready to serve.")
+addBotMessage("GPT4ALL","Hello there, I am GPT4ALL. Ready to serve.<br><b>Note:</b><br>This is a very early testing of GPT4All chatbot.<br>Any feedback and contribution is welcomed.<br>This Webui is a binding to the Gpt4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.<br>Example:A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.")
 
 
 const newDiscussionBtn = document.querySelector('#new-discussion-btn');

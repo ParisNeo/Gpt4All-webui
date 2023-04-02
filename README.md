@@ -64,12 +64,28 @@ These scripts will create a Python virtual environment and install the required 
 
 ## Usage
 
-To launch the app, run the following command:
-```
-python app.py
-```
+To run the Flask server, execute the following command:
 
-This will start the Flask service and make the app available at http://localhost:5000. To use the app, open a web browser and navigate to this URL.
+```bash
+python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
+```
+## Options
+- `--port`: the port on which to run the server (default: 5000)
+- `--host`: the host address on which to run the server (default: localhost)
+- `--temp`: the sampling temperature for the model (default: 0.1)
+- `--n-predict`: the number of tokens to predict at a time (default: 128)
+- `--top-k`: the number of top-k candidates to consider for sampling (default: 40)
+- `--top-p`: the cumulative probability threshold for top-p sampling (default: 0.90)
+- `--repeat-penalty`: the penalty to apply for repeated n-grams (default: 1.3)
+- `--repeat-last-n`: the number of tokens to use for detecting repeated n-grams (default: 64)
+- `--ctx-size`: the maximum context size to use for generating responses (default: 2048)
+
+Note: All options are optional, and have default values.
+
+Once the server is running, open your web browser and navigate to http://localhost:5000 to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
+
+
+Make sure to adjust the default values and descriptions of the options to match your specific application.
 
 
 ## Contribute
