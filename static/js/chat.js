@@ -11,7 +11,9 @@ chatForm.addEventListener('submit', event => {
     
     // add user message to chat window
     addUserMessage('User', message);
-    messageTextElement = addBotMessage('GPT4ALL', '');
+    elements = addBotMessage('GPT4ALL', '');
+    messageTextElement=elements['messageTextElement'];
+    hiddenElement=elements['hiddenElement'];
     last_reception_is_f=false;
 
     fetch('/bot', {
@@ -48,17 +50,21 @@ chatForm.addEventListener('submit', event => {
                 for (const char of text) {
                     if (last_reception_is_f){
                       // start a new message
-                      messageTextElement = addBotMessage('GPT4ALL', '');
-                      last_reception_is_f = false;
+                        elements = addBotMessage('GPT4ALL', '');
+                        messageTextElement=elements['messageTextElement'];
+                        hiddenElement=elements['hiddenElement'];
+                        last_reception_is_f = false;
                     }
 
                     if (char === '\f') {
                         last_reception_is_f = true;                    
                     }
                     else{
-                        txt = messageTextElement.innerHTML;
+                        txt = hiddenElement.innerHTML;
                         txt += char
-                        messageTextElement.innerHTML = txt;
+                        hiddenElement.innerHTML = txt
+                        messageTextElement.innerHTML = txt.replace(/\n/g, "<br>")
+                        console.log(messageTextElement.innerHTML)
                     }
                     // scroll to bottom of chat window
                     chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -103,17 +109,22 @@ function addBotMessage(sender, message) {
     
     const messageTextElement = document.createElement('div');
     messageTextElement.classList.add('font-medium', 'text-md');
-
     messageTextElement.innerHTML = message
+
+    // Create a hidden div element
+    const hiddenElement = document.createElement('div');
+    hiddenElement.style.display = 'none';
+    hiddenElement.innerHTML = '';    
     
     messageElement.appendChild(senderElement);
     messageElement.appendChild(messageTextElement);
     chatWindow.appendChild(messageElement);
+    chatWindow.appendChild(hiddenElement);
     
     // scroll to bottom of chat window
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    return messageTextElement
+    return {'messageTextElement':messageTextElement, 'hiddenElement':hiddenElement}
 }
 
 const exportButton = document.getElementById('export-button');
@@ -168,7 +179,7 @@ link.download = 'chat.txt';
 link.click();
 }
 
-addBotMessage("GPT4ALL","Note:</b><br>This is a very early testing of GPT4All chatbot.<br>Bre in mind that this is a 7B parameters model running on your own PC's CPU.Its is literally 24 times smaller than gpt3 in terms of parameters number.<br>It is still new and is not yet as powerful as GPT3.5 or GPT4. But still can be useful for many applications.<br>Any feedback and contribution is welcomed.<br>This Webui is a binding to the Gpt4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.<br>Examples:<br>A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.<br>Reverse a string in python.<br>List 10 dogs.<br>Write me a poem about the fall of Julius Ceasar into a ceasar salad in iambic pentameter.<br>What is a three word topic describing the following keywords: baseball, football, soccer:<br>")
+addBotMessage("GPT4ALL","Note:</b><br>This is a very early testing Web UI of GPT4All chatbot.<br>Bre in mind that this is a 7B parameters model running on your own PC's CPU.Its is literally 24 times smaller than gpt3 in terms of parameters number.<br>It is still new and is not yet as powerful as GPT3.5 or GPT4. But still can be useful for many applications.<br>Any feedback and contribution is welcomed.<br>This Webui is a binding to the Gpt4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.<br>Examples:<br>A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.<br>Reverse a string in python.<br>List 10 dogs.<br>Write me a poem about the fall of Julius Ceasar into a ceasar salad in iambic pentameter.<br>What is a three word topic describing the following keywords: baseball, football, soccer:<br>")
 
 
 const newDiscussionBtn = document.querySelector('#new-discussion-btn');
@@ -192,4 +203,17 @@ newDiscussionBtn.addEventListener('click', () => {
     //selectDiscussion(discussionId);
     chatWindow.innerHTML=""
   }
+});
+
+
+// Code for collapsable text
+const collapsibles = document.querySelectorAll('.collapsible');
+
+collapsibles.forEach(collapsible => {
+  const header = collapsible.querySelector('.collapsible-header');
+  const content = collapsible.querySelector('.collapsible-content');
+
+  header.addEventListener('click', () => {
+    content.classList.toggle('active');
+  });
 });

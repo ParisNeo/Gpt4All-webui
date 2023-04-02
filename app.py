@@ -172,10 +172,10 @@ class Gpt4AllWebUI():
             try:
                 character = point.decode("utf-8")
                 # if character == "\f": # We've replaced the delimiter character with this.
-                #    return "<br>".join(bot_says)
+                #    return "\n".join(bot_says)
                 if character == "\n":
-                    bot_says.append('')
-                    yield '<br>'
+                    bot_says.append('\n')
+                    yield '\n'
                 else:
                     bot_says[-1] += character
                     yield character

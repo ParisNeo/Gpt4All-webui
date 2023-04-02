@@ -672,3 +672,11 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgb(61 115 225 / var(--tw-bg-opacity));
 }
+
+.collapsible-header {
+  cursor: pointer;
+}
+
+.collapsible-content {
+  display: none;
+}
