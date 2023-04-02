@@ -56,14 +56,14 @@ chatForm.addEventListener('submit', event => {
 
 function addUserMessage(sender, message) {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('user-message');
+    messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
     messageElement.classList.add(sender);
     const senderElement = document.createElement('div');
-    senderElement.classList.add('user-sender');
+    senderElement.classList.add('font-normal', 'underline', 'text-sm');
     senderElement.innerHTML = sender;
     
     const messageTextElement = document.createElement('div');
-    messageTextElement.classList.add('message-text');
+    messageTextElement.classList.add('font-medium', 'text-md');
     messageTextElement.innerHTML = message;
     
     messageElement.appendChild(senderElement);
@@ -77,14 +77,14 @@ function addUserMessage(sender, message) {
 
 function addBotMessage(sender, message) {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('bot-message');
+    messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
     messageElement.classList.add(sender);
     const senderElement = document.createElement('div');
-    senderElement.classList.add('bot-sender');
+    senderElement.classList.add('font-normal', 'underline', 'text-sm');
     senderElement.innerHTML = sender;
     
     const messageTextElement = document.createElement('div');
-    messageTextElement.classList.add('message-text');
+    messageTextElement.classList.add('font-medium', 'text-md');
 
     messageTextElement.innerHTML = message
     

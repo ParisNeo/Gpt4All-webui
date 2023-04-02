@@ -4,31 +4,22 @@
     <title>Chat with Bot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 </head>
-<body>
-    <div class="banner">
-        <div class="icon"><img src="{{ url_for('static', filename='images/icon.png') }}"></div>
-        <h1>Chat with GPT4All</h1>
+<body class="w-screen h-screen bg-primary text-gray-400 flex flex-col">
+    <div class="w-full h-20 border-b border-accent bg-tertiary text-2xl font-bold flex justify-between items-center px-6">
+        <div class="w-12 h-12"><img src="{{ url_for('static', filename='images/icon.png') }}"></div>
+        <h1>GPT4All - WEBUI</h1>
     </div>
-    <div id="toolbar" class="toolbar">
-        <button id="new-discussion-btn" class="btn">New Discussion</button>
-        <button id="export-button" class="btn">Export</button>
-    </div>
-    <div id="left-panel" class="left-bar">
-        <!-- Put your left panel content here -->
-    </div>
-    <div id="content">
-        <!-- Put your main content here -->
-        <main id="chat-window">
-            <!-- chat messages will be added dynamically here -->
-        </main>
-        <footer>
-            <form id="chat-form">
-                <input type="text" id="user-input" placeholder="Type your message...">
-                <button type="submit">Send</button>
-            </form>
-        </footer>
-        </div>
+    <main id="chat-window" class="h-full overflow-y-auto flex flex-col my-4">
+        <!-- chat messages will be added dynamically here -->
+    </main>
+    <footer class="border-t border-accent flex">
+        <input type="button" value="New Chat" id="new-discussion-btn" class="my-1 mx-1 outline-none px-4 bg-accent text-black rounded-md hover:bg-[#7ba0ea] active:bg-[#3d73e1]  transition-colors ease-in-out">
+        <input type="button" value="Export" id="export-button" class="my-1 mx-1 outline-none px-4 bg-accent text-black rounded-md hover:bg-[#7ba0ea] active:bg-[#3d73e1]  transition-colors ease-in-out">
+        <form id="chat-form" class="flex w-full">
+            <input type="text" id="user-input" placeholder="Type your message..." class="bg-secondary my-1 mx-1 outline-none drop-shadow-sm w-full rounded-md p-2">
+            <input type="submit" value="Send" class="my-1 mx-1 outline-none px-4 bg-accent text-black rounded-md hover:bg-[#7ba0ea] active:bg-[#3d73e1]  transition-colors ease-in-out">
+        </form>
+    </footer>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-
 </body>
 </html>
