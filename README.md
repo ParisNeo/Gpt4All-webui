@@ -8,7 +8,9 @@
 This is a Flask web application that provides a chat UI for interacting with the GPT4All chatbot.
 
 ## What is GPT4All
-GPT4All is a language model built by Nomic-AI, a company specializing in natural language processing. The app uses Nomic-AI's library to communicate with the GPT4All model, which runs locally on the user's PC. The app allows users to send messages to the chatbot and view its responses in real-time. Additionally, users can export the entire chat history in text or JSON format.
+GPT4All is a language model built by Nomic-AI, a company specializing in natural language processing. The app uses Nomic-AI's library to communicate with the GPT4All model, which runs locally on the user's PC. For more details about this project, head on to their [github repository](https://github.com/nomic-ai/gpt4all). You can also reald their [Technical report](https://s3.amazonaws.com/static.nomic.ai/gpt4all/2023_GPT4All_Technical_Report.pdf) for more information about the training process, the batabase etc.
+
+The app allows users to send messages to the chatbot and view its responses in real-time. Additionally, users can export the entire chat history in text or JSON format.
 
 The model has just been released and it may evolve over time, this webui is meant for community to get easy and fully  local access to a chatbot that may become better with time. 
 
@@ -17,7 +19,7 @@ The model used by GPT4ALL has been fine-tuned using the LORA technique on LLAMA 
 
 It is important to understand that we are not responsible for any misuse of this tool. Please use it responsibly and at your own risk. While we hope that Nomic will address this issue in the future by providing clean weights that can be used freely, for now, this model is intended for testing purposes only.
 
-
+## UI screenshot
 ![image](https://user-images.githubusercontent.com/827993/229349273-221b6bfc-475e-4be3-8d98-fb8f0036df8e.png)
 
 
@@ -83,7 +85,7 @@ To run the Flask server, execute the following command:
 python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
 ```
 ## Options
-- `--port`: the port on which to run the server (default: 5000)
+- `--port`: the port on which to run the server (default: 9600)
 - `--host`: the host address on which to run the server (default: localhost)
 - `--temp`: the sampling temperature for the model (default: 0.1)
 - `--n-predict`: the number of tokens to predict at a time (default: 128)
@@ -95,7 +97,7 @@ python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] 
 
 Note: All options are optional, and have default values.
 
-Once the server is running, open your web browser and navigate to http://localhost:5000 to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
+Once the server is running, open your web browser and navigate to http://localhost:9600 (or http://your host name:your port number if you have selected different values for those) to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
 
 
 Make sure to adjust the default values and descriptions of the options to match your specific application.
