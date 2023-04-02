@@ -11,22 +11,48 @@ chatForm.addEventListener('submit', event => {
     
     // add user message to chat window
     addUserMessage('User', message);
+    messageTextElement = addBotMessage('GPT4ALL', '');
     
-    // send user message to Flask back-end using fetch API
+
     fetch('/bot', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({ message })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // add bot message to chat window
-        addBotMessage('Bot', data);
-    })
-    .catch(error => console.error(error));
+    }).then(function(response) {
+        const stream = new ReadableStream({
+            start(controller) {
+                const reader = response.body.getReader();
+                function push() {
+                    reader.read().then(function(result) {
+                        if (result.done) {
+                            controller.close();
+                            return;
+                        }
+                        controller.enqueue(result.value);
+                        push();
+                    })
+                }
+                push();
+            }
+        });
+        const textDecoder = new TextDecoder();
+        const readableStreamDefaultReader = stream.getReader();
+        function readStream() {
+            readableStreamDefaultReader.read().then(function(result) {
+                if (result.done) {
+                    return;
+                }
+                messageTextElement.innerHTML += textDecoder.decode(result.value);
+                readStream();
+            });
+        }
+        readStream();
+    });
+
 });
+
 
 function addUserMessage(sender, message) {
     const messageElement = document.createElement('div');
@@ -34,11 +60,11 @@ function addUserMessage(sender, message) {
     messageElement.classList.add(sender);
     const senderElement = document.createElement('div');
     senderElement.classList.add('user-sender');
-    senderElement.textContent = sender;
+    senderElement.innerHTML = sender;
     
     const messageTextElement = document.createElement('div');
     messageTextElement.classList.add('message-text');
-    messageTextElement.textContent = message;
+    messageTextElement.innerHTML = message;
     
     messageElement.appendChild(senderElement);
     messageElement.appendChild(messageTextElement);
@@ -55,11 +81,12 @@ function addBotMessage(sender, message) {
     messageElement.classList.add(sender);
     const senderElement = document.createElement('div');
     senderElement.classList.add('bot-sender');
-    senderElement.textContent = sender;
+    senderElement.innerHTML = sender;
     
     const messageTextElement = document.createElement('div');
     messageTextElement.classList.add('message-text');
-    messageTextElement.textContent = message;
+
+    messageTextElement.innerHTML = message
     
     messageElement.appendChild(senderElement);
     messageElement.appendChild(messageTextElement);
@@ -67,6 +94,8 @@ function addBotMessage(sender, message) {
     
     // scroll to bottom of chat window
     chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    return messageTextElement
 }
 
 const exportButton = document.getElementById('export-button');
@@ -110,3 +139,25 @@ link.href = url;
 link.download = 'chat.txt';
 link.click();
 }
+
+addBotMessage("GPT4ALL","Hello there, I am GPT4ALL. Ready to serve.")
+
+
+const newDiscussionBtn = document.querySelector('#new-discussion-btn');
+newDiscussionBtn.addEventListener('click', () => {
+  const discussionName = prompt('Enter a name for the new discussion:');
+  if (discussionName) {
+    // Create a new discussion in the database
+    const discussionId = db.createDiscussion(discussionName);
+
+    // Add the discussion to the discussion list
+    const discussionList = document.querySelector('#discussion-list');
+    const discussionItem = document.createElement('li');
+    discussionItem.textContent = discussionName;
+    discussionItem.dataset.id = discussionId;
+    discussionList.appendChild(discussionItem);
+    
+    // Select the new discussion
+    selectDiscussion(discussionId);
+  }
+});

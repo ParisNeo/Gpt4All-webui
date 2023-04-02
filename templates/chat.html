@@ -5,21 +5,29 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 </head>
 <body>
-    <header>
+    <div class="banner">
+        <div class="icon"><img src="{{ url_for('static', filename='images/icon.png') }}"></div>
         <h1>Chat with GPT4All</h1>
-    </header>
-    <div id="toolbar">
-        <button id="export-button">Export</button>
     </div>
-    <main id="chat-window">
-        <!-- chat messages will be added dynamically here -->
-    </main>
-    <footer>
-        <form id="chat-form">
-            <input type="text" id="user-input" placeholder="Type your message...">
-            <button type="submit">Send</button>
-        </form>
-    </footer>
+    <div id="toolbar" class="toolbar">
+        <button id="new-discussion-btn" class="btn">New Discussion</button>
+        <button id="export-button" class="btn">Export</button>
+    </div>
+    <div id="left-panel" class="left-bar">
+        <!-- Put your left panel content here -->
+    </div>
+    <div id="content">
+        <!-- Put your main content here -->
+        <main id="chat-window">
+            <!-- chat messages will be added dynamically here -->
+        </main>
+        <footer>
+            <form id="chat-form">
+                <input type="text" id="user-input" placeholder="Type your message...">
+                <button type="submit">Send</button>
+            </form>
+        </footer>
+        </div>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 
 </body>
