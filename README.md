@@ -5,7 +5,18 @@
 [![GitHub stars](https://img.shields.io/github/stars/ParisNeo/Gpt4All-webui)](https://github.com/ParisNeo/Gpt4All-webui/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/ParisNeo/Gpt4All-webui)](https://github.com/ParisNeo/Gpt4All-webui/network)
 
-This is a Flask web application that provides a chat UI for interacting with the GPT4All chatbot. GPT4All is a language model built by Nomic-AI, a company specializing in natural language processing. The app uses Nomic-AI's API to communicate with the GPT4All model, which runs locally on the user's PC. The app allows users to send messages to the chatbot and view its responses in real-time. Additionally, users can export the entire chat history in text or JSON format (under construction).
+This is a Flask web application that provides a chat UI for interacting with the GPT4All chatbot.
+
+## What is GPT4All
+GPT4All is a language model built by Nomic-AI, a company specializing in natural language processing. The app uses Nomic-AI's API to communicate with the GPT4All model, which runs locally on the user's PC. The app allows users to send messages to the chatbot and view its responses in real-time. Additionally, users can export the entire chat history in text or JSON format.
+
+The model has just been released and it may evolve over time, this webui is meant for community to get easy and fully  local access to a chatbot that may become better with time. 
+
+## Disclaimer
+The model in this repository has been fine-tuned using the LORA technique on LLAMA 7B weights (for now). It is important to note that the LLAMA weights are under commercial proprietary license, and therefore, this model cannot be used for commercial purposes. We do not provide the weights ourselves, but have built a UI wrapper on top of the Nomic library, which downloads the weights automatically upon running the program.
+
+It is important to understand that we are not responsible for any misuse of this tool. Please use it responsibly and at your own risk. While we hope that Nomic will address this issue in the future by providing clean weights that can be used freely, for now, this model is intended for testing purposes only.
+
 
 ![image](https://user-images.githubusercontent.com/827993/229349273-221b6bfc-475e-4be3-8d98-fb8f0036df8e.png)
 
