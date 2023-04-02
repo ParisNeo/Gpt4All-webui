@@ -52,11 +52,7 @@ echo "Installing requirements..."
 export DS_BUILD_OPS=0
 export DS_BUILD_AIO=0
 python3.10 -m pip install pip --upgrade
-
-
 python3.10 -m pip install -r requirements.txt
-echo "Installing nomic library for eazy and direct use of GPT4All..."
-python3.10 -m pip install nomic
 
 if [ $? -ne 0 ]; then
   echo "Failed to install required packages. Please check your internet connection and try again."

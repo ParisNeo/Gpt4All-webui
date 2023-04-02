@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, render_template, Response, stream_with_context
-from GPT4All import GPT4All
+from nomic.gpt4all import GPT4All
 import argparse
 import threading
 from io import StringIO
@@ -102,10 +102,10 @@ print("Done")
 # ========================================================================================================================
 
 m = GPT4All(decoder_config = {
-            'temp': 0.01,
+            'temp': 0.1,
             'n_predict':128,
             'top_k':40,
-            'top_p':0.95,
+            'top_p':0.90,
             #'color': True,#"## Instruction",
             'repeat_penalty': 1.3,
             'repeat_last_n':64,
