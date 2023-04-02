@@ -119,6 +119,18 @@ We will review your pull request as soon as possible and provide feedback on any
 
 Please note that all contributions are subject to review and approval by our project maintainers. We reserve the right to reject any contribution that does not align with our project goals or standards.
 
+## Future Plans
+
+Here are some of the future plans for this project:
+
+- **Enhanced control of chatbot parameters:** We plan to improve the user interface (UI) of the chatbot to allow users to control the parameters of the chatbot such as temperature and other variables. This will give users more control over the chatbot's responses, and allow for a more customized experience.
+
+- **Extension system for plugins:** We are also working on an extension system that will allow developers to create plugins for the chatbot. These plugins will be able to add new features and capabilities to the chatbot, and allow for greater customization of the chatbot's behavior.
+
+- **Enhanced UI with themes and skins:** Additionally, we plan to enhance the user interface of the chatbot to allow for themes and skins. This will allow users to personalize the appearance of the chatbot, and make it more visually appealing.
+
+We are excited about these future plans for the project and look forward to implementing them in the near future. Stay tuned for updates!
+
 
 ## License
 
