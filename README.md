@@ -153,4 +153,4 @@ This project is licensed under the Apache 2.0 License. See the [LICENSE](https:/
 
 ## Special thanks
 
-Special thanks to [cclaar-byte](https://github.com/cclaar-byte) for enhancing the UI.
+Special thanks to [cclaar-byte](https://github.com/cclaar-byte) and [CybearWarfare](https://github.com/CybearWarfare) for enhancing the UI.
