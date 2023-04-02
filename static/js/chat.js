@@ -183,7 +183,7 @@ function add_collapsible_div(text){
     output = `
     <div class="collapsible">
     <div class="collapsible-header">
-      <h3>Click to Expand/Collapse</h3>
+      <h3 style='text-decoration: underline;'>Click to Expand/Collapse</h3>
     </div>
     <div class="collapsible-content">
       <p>${text}</p>
