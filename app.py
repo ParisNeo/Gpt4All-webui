@@ -21,9 +21,8 @@ class Discussion:
         self.db_path = db_path
 
     @staticmethod
-    def create_discussion(db_path='database.db'):
+    def create_discussion(db_path='database.db', title='untitled'):
         with sqlite3.connect(db_path) as conn:
-            title = request.form.get('untitled')
             cur = conn.cursor()
             cur.execute("INSERT INTO discussion (title) VALUES (?)", (title,))
             discussion_id = cur.lastrowid
@@ -111,6 +110,7 @@ class Gpt4AllWebUI():
         self.add_endpoint('/stream', 'stream', self.stream, methods=['GET'])
         self.add_endpoint('/new-discussion', 'new-discussion', self.new_discussion, methods=['POST'])
         self.add_endpoint('/export', 'export', self.export, methods=['GET'])
+        self.add_endpoint('/new_discussion', 'new_discussion', self.new_discussion, methods=['GET'])
         self.add_endpoint('/bot', 'bot', self.bot, methods=['POST'])
         # Chatbot conditionning
         # response = self.chatbot_bindings.prompt("This is a discussion between A user and an AI. AI responds to user questions in a helpful manner. AI is not allowed to lie or deceive. AI welcomes the user\n### Response:")
@@ -146,7 +146,8 @@ class Gpt4AllWebUI():
         return Response(stream_with_context(generate()))
 
     def new_discussion(self):        
-        self.current_discussion= Discussion()
+        tite = request.args.get('tite')
+        self.current_discussion= Discussion.create_discussion(db_path, tite)
         # Get the current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -208,7 +209,10 @@ class Gpt4AllWebUI():
                 print(ex)
                 msg = traceback.print_exc()
                 return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
-
+    def new_discussion(self):
+        self.chatbot_bindings.close()
+        self.chatbot_bindings.open()
+        print("chatbot reset successfully")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start the chatbot Flask app.')

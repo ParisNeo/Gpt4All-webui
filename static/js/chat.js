@@ -56,7 +56,7 @@ chatForm.addEventListener('submit', event => {
                         last_reception_is_f = true;                    
                     }
                     else{
-                        txt = messageTextElement.innerHTML
+                        txt = messageTextElement.innerHTML;
                         txt += char
                         messageTextElement.innerHTML = txt;
                     }
@@ -135,9 +135,10 @@ exportButton.addEventListener('click', () => {
         fetch('/export')
         .then(response => response.json())
         .then(data => {
+            db_data = JSON.stringify(data)
           // Do something with the data, such as displaying it on the page
-          console.log(data);
-          downloadJsonFile(data);
+          console.log(db_data);
+          downloadJsonFile(db_data);
         })
         .catch(error => {
           // Handle any errors that occur
@@ -167,24 +168,28 @@ link.download = 'chat.txt';
 link.click();
 }
 
-addBotMessage("GPT4ALL","Hello there, I am GPT4ALL. Ready to serve.<br><b>Note:</b><br>This is a very early testing of GPT4All chatbot.<br>Any feedback and contribution is welcomed.<br>This Webui is a binding to the Gpt4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.<br>Example:A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.")
+addBotMessage("GPT4ALL","Note:</b><br>This is a very early testing of GPT4All chatbot.<br>Bre in mind that this is a 7B parameters model running on your own PC's CPU.Its is literally 24 times smaller than gpt3 in terms of parameters number.<br>It is still new and is not yet as powerful as GPT3.5 or GPT4. But still can be useful for many applications.<br>Any feedback and contribution is welcomed.<br>This Webui is a binding to the Gpt4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.<br>Examples:<br>A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.<br>Reverse a string in python.<br>List 10 dogs.<br>Write me a poem about the fall of Julius Ceasar into a ceasar salad in iambic pentameter.<br>What is a three word topic describing the following keywords: baseball, football, soccer:<br>")
 
 
 const newDiscussionBtn = document.querySelector('#new-discussion-btn');
 newDiscussionBtn.addEventListener('click', () => {
   const discussionName = prompt('Enter a name for the new discussion:');
   if (discussionName) {
-    // Create a new discussion in the database
-    const discussionId = db.createDiscussion(discussionName);
-
     // Add the discussion to the discussion list
     const discussionList = document.querySelector('#discussion-list');
     const discussionItem = document.createElement('li');
     discussionItem.textContent = discussionName;
-    discussionItem.dataset.id = discussionId;
-    discussionList.appendChild(discussionItem);
+    fetch(`/new_discussion?tite=${discussionName}`)
+    .then(response => response.json())
+    .then(data => {
+    })
+    .catch(error => {
+      // Handle any errors that occur
+      console.error(error);
+    });
     
     // Select the new discussion
-    selectDiscussion(discussionId);
+    //selectDiscussion(discussionId);
+    chatWindow.innerHTML=""
   }
 });
