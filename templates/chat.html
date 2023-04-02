@@ -4,13 +4,23 @@
     <title>Chat with Bot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
 </head>
-<body class="w-screen h-screen bg-primary text-gray-400 flex flex-col">
+<body class="w-screen h-screen bg-primary text-gray-400 flex flex-col overflow-hidden">
     <div class="w-full h-20 border-b border-accent bg-tertiary text-2xl font-bold flex justify-between items-center px-6">
         <div class="w-12 h-12"><img src="{{ url_for('static', filename='images/icon.png') }}"></div>
         <h1>GPT4All - WEBUI</h1>
     </div>
-    <main id="chat-window" class="h-full overflow-y-auto flex flex-col my-4">
-        <!-- chat messages will be added dynamically here -->
+    <main class="h-full flex flex-col md:flex-row overflow-hidden max-h-full">
+        <section class="w-full md:w-1/3 lg:w-1/4 xl:w-1/5 bg-secondary flex md:flex-col md:border-r border-accent sm:border-b md:border-b-0">
+            <section class="md:h-1/2 md:border-b border-accent flex">
+              <p>Chats</p>
+            </section>
+            <section class="md:h-1/2 flex sm:space-x-reverse">
+              <p>Settings</p>
+            </section>
+          </section>
+        <section id="chat-window" class="w-full overflow-y-auto flex flex-col">
+
+        </section>
     </main>
     <footer class="border-t border-accent flex">
         <input type="button" value="New Chat" id="new-discussion-btn" class="my-1 mx-1 outline-none px-4 bg-accent text-black rounded-md hover:bg-[#7ba0ea] active:bg-[#3d73e1]  transition-colors ease-in-out">
