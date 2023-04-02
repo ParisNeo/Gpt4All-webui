@@ -124,3 +124,8 @@ Please note that all contributions are subject to review and approval by our pro
 
 This project is licensed under the Apache 2.0 License. See the [LICENSE](https://github.com/ParisNeo/Gpt4All-webui/blob/main/LICENSE) file for details.
 This project is licensed under the Apache 2.0 License. See the [LICENSE](https://github.com/ParisNeo/Gpt4All-webui/blob/main/LICENSE) file for details.
+
+
+## Special thanks
+
+Special thanks to [cclaar-byte](https://github.com/cclaar-byte) for enhancing the UI.
