@@ -213,6 +213,7 @@ class Gpt4AllWebUI():
         self.chatbot_bindings.close()
         self.chatbot_bindings.open()
         print("chatbot reset successfully")
+        return "chatbot reset successfully"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start the chatbot Flask app.')
