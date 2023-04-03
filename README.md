@@ -74,6 +74,14 @@ nano -lASimYsh install.sh
 
 ![](https://user-images.githubusercontent.com/9384127/229646387-9fea98c6-fb13-496b-b8eb-9db6fe241556.png)
 
+
+\- Make it runnable
+
+```
+chmod +x install.sh
+```
+
+
 \- Run the install script
 
 ```
