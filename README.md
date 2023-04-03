@@ -2,18 +2,9 @@
 
 ![GitHub license](https://img.shields.io/github/license/ParisNeo/Gpt4All-webui)
 
-  
- 
-
 ![GitHub issues](https://img.shields.io/github/issues/ParisNeo/Gpt4All-webui)
 
-  
- 
-
 ![GitHub stars](https://img.shields.io/github/stars/ParisNeo/Gpt4All-webui)
-
-  
- 
 
 ![GitHub forks](https://img.shields.io/github/forks/ParisNeo/Gpt4All-webui)
 
@@ -77,9 +68,10 @@ When Nomic add windows support you would be able to use this :
 On Linux or macOS:
 
 \- Review the install script 🙏🏻
+```
+nano -lASimYsh install.sh
 
-  
-`nano -lASimYsh install.sh`
+```
 
 ```
 ./install.sh
