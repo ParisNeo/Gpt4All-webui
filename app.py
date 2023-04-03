@@ -217,6 +217,7 @@ class Gpt4AllWebUI():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start the chatbot Flask app.')
+
     parser.add_argument('--temp', type=float, default=0.1, help='Temperature parameter for the model.')
     parser.add_argument('--n_predict', type=int, default=128, help='Number of tokens to predict at each step.')
     parser.add_argument('--top_k', type=int, default=40, help='Value for the top-k sampling.')
@@ -225,6 +226,8 @@ if __name__ == '__main__':
     parser.add_argument('--repeat_last_n', type=int, default=64, help='Number of previous tokens to consider for the repeat penalty.')
     parser.add_argument('--ctx_size', type=int, default=2048, help='Size of the context window for the model.')
     parser.add_argument('--debug', dest='debug', action='store_true', help='launch Flask server in debug mode')
+    parser.add_argument('--host', type=str, default='localhost', help='the hostname to listen on')
+    parser.add_argument('--port', type=int, default=9600, help='the port to listen on')
     parser.set_defaults(debug=False)
 
     args = parser.parse_args()
@@ -243,6 +246,6 @@ if __name__ == '__main__':
     bot = Gpt4AllWebUI(chatbot_bindings, app, db_path)  
 
     if args.debug:
-        app.run(debug=True, port=9600)
+        app.run(debug=True, host=args.host, port=args.port)
     else:
-        app.run(port=9600)
+        app.run(host=args.host, port=args.port)
