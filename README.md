@@ -72,6 +72,8 @@ cd Gpt4All-webui
 
 
 - On Linux or macOS:
+-- Review the install script 🙏🏻
+nano -lASimYsh install.sh
 
   ```
   ./install.sh
