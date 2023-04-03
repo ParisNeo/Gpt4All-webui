@@ -74,19 +74,19 @@ nano -lASimYsh install.sh
 
 ![](https://user-images.githubusercontent.com/9384127/229646387-9fea98c6-fb13-496b-b8eb-9db6fe241556.png)
 
-
 \- Make it runnable
 
 ```
 chmod +x install.sh
 ```
 
-
 \- Run the install script
 
 ```
 ./install.sh
 ```
+
+![](https://user-images.githubusercontent.com/9384127/229650379-e70a54b3-a8c0-44c6-a44f-26b96dfbcf4e.png)
 
 These scripts will create a Python virtual environment and install the required dependencies.
 
