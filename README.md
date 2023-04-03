@@ -148,7 +148,6 @@ We are excited about these future plans for the project and look forward to impl
 ## License
 
 This project is licensed under the Apache 2.0 License. See the [LICENSE](https://github.com/ParisNeo/Gpt4All-webui/blob/main/LICENSE) file for details.
-This project is licensed under the Apache 2.0 License. See the [LICENSE](https://github.com/ParisNeo/Gpt4All-webui/blob/main/LICENSE) file for details.
 
 
 ## Special thanks
