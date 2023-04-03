@@ -49,7 +49,6 @@ To install the app, follow these steps:
 1.  Clone the GitHub repository:
 
 ```
-
 git clone https://github.com/higorvaz/Gpt4All-webui
 ```
 
