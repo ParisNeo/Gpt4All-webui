@@ -67,10 +67,15 @@ When Nomic add windows support you would be able to use this :
 On Linux or macOS:
 
 \- Review the install script 🙏🏻
+
 ```
 nano -lASimYsh install.sh
 ```
-\- Run the install script 🙏🏻
+
+![](https://user-images.githubusercontent.com/9384127/229646387-9fea98c6-fb13-496b-b8eb-9db6fe241556.png)
+
+\- Run the install script
+
 ```
 ./install.sh
 ```
