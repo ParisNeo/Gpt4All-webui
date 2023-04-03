@@ -15,7 +15,8 @@ chatForm.addEventListener('submit', event => {
     messageTextElement=elements['messageTextElement'];
     hiddenElement=elements['hiddenElement'];
     last_reception_is_f=false;
-
+    const sendbtn = document.querySelector("#submit-input")
+    sendbtn.style.display="none";
     fetch('/bot', {
         method: 'POST',
         headers: {
@@ -29,6 +30,7 @@ chatForm.addEventListener('submit', event => {
                 function push() {
                     reader.read().then(function(result) {
                         if (result.done) {
+                            sendbtn.style.display="block";
                             controller.close();
                             return;
                         }
@@ -64,7 +66,6 @@ chatForm.addEventListener('submit', event => {
                         txt += char
                         hiddenElement.innerHTML = txt
                         messageTextElement.innerHTML = txt.replace(/\n/g, "<br>")
-                        console.log(messageTextElement.innerHTML)
                     }
                     // scroll to bottom of chat window
                     chatWindow.scrollTop = chatWindow.scrollHeight;
