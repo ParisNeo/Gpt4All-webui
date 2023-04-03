@@ -70,9 +70,8 @@ On Linux or macOS:
 \- Review the install script 🙏🏻
 ```
 nano -lASimYsh install.sh
-
 ```
-
+\- Run the install script 🙏🏻
 ```
 ./install.sh
 ```
