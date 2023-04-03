@@ -171,8 +171,8 @@ class Gpt4AllWebUI():
             point += bot.stdout.read(1)
             try:
                 character = point.decode("utf-8")
-                # if character == "\f": # We've replaced the delimiter character with this.
-                #    return "\n".join(bot_says)
+                if character == "\f": # We've replaced the delimiter character with this.
+                    return "\n".join(bot_says)
                 if character == "\n":
                     bot_says.append('\n')
                     yield '\n'
