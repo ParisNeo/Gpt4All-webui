@@ -13,6 +13,8 @@ import json
 import time 
 import traceback
 
+import select
+
 #=================================== Database ==================================================================
 db_path = 'database.db'
 class Discussion:
@@ -167,25 +169,32 @@ class Gpt4AllWebUI():
         bot_says = ['']
         point = b''
         bot = self.chatbot_bindings.bot
-        while True:
-            point += bot.stdout.read(1)
-            try:
-                character = point.decode("utf-8")
-                if character == "\f": # We've replaced the delimiter character with this.
-                    return "\n".join(bot_says)
-                if character == "\n":
-                    bot_says.append('\n')
-                    yield '\n'
-                else:
-                    bot_says[-1] += character
-                    yield character
-                point = b''
-
-            except UnicodeDecodeError:
-                if len(point) > 4:
+        self.stop=False
+        wait_val = 15.0 # At the beginning the server may need time to send data. we wait 15s
+        while not self.stop:
+            readable, _, _ = select.select([bot.stdout], [], [], wait_val)
+            if bot.stdout in readable:
+                point += bot.stdout.read(1)
+                try:
+                    character = point.decode("utf-8")
+                    wait_val=1.0 # Reduce the wait duration to 1s
+                    # if character == "\f": # We've replaced the delimiter character with this.
+                    #    return "\n".join(bot_says)
+                    if character == "\n":
+                        bot_says.append('\n')
+                        yield '\n'
+                    else:
+                        bot_says[-1] += character
+                        yield character
                     point = b''
 
+                except UnicodeDecodeError:
+                    if len(point) > 4:
+                        point = b''
+            else:
+                return "\n".join(bot_says)
     def bot(self):
+        self.stop=True
         with sqlite3.connect('database.db') as conn:
             try:
                 if self.current_discussion is None or not last_discussion_has_messages():

@@ -16,7 +16,9 @@ chatForm.addEventListener('submit', event => {
     hiddenElement=elements['hiddenElement'];
     last_reception_is_f=false;
     const sendbtn = document.querySelector("#submit-input")
+    const sendbtn = document.querySelector("#wait-animation")
     sendbtn.style.display="none";
+    wait-animation
     fetch('/bot', {
         method: 'POST',
         headers: {
