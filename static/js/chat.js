@@ -301,7 +301,7 @@ fetch('/discussions')
           })
           .then(response => {
             if (response.ok) {
-                buttonWrapper.parentElement.remove();
+                buttonWrapper.remove();
             } else {
               alert('Failed to delete discussion');
             }
