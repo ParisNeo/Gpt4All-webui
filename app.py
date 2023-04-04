@@ -30,12 +30,37 @@ class Discussion:
             discussion_id = cur.lastrowid
             conn.commit()
         return Discussion(discussion_id, db_path)
+    
+    @staticmethod
+    def get_discussion(db_path='database.db', id=0):
+        return Discussion(id, db_path)
 
     def add_message(self, sender, content):
         with sqlite3.connect(self.db_path) as conn:
             cur = conn.cursor()
             cur.execute('INSERT INTO message (sender, content, discussion_id) VALUES (?, ?, ?)',
                          (sender, content, self.discussion_id))
+            conn.commit()
+    @staticmethod
+    def get_discussions(db_path):
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM discussion')
+            rows = cursor.fetchall()
+        return [{'id': row[0], 'title': row[1]} for row in rows]
+
+    @staticmethod
+    def rename(db_path, discussion_id, title):
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE discussion SET title=? WHERE id=?', (title, discussion_id))
+            conn.commit()
+
+    def delete_discussion(self):
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute('DELETE FROM message WHERE discussion_id=?', (self.discussion_id,))
+            cur.execute('DELETE FROM discussion WHERE id=?', (self.discussion_id,))
             conn.commit()
 
     def get_messages(self):
@@ -101,7 +126,7 @@ print("Ok")
 
 
 
-app = Flask("GPT4All-WebUI")
+app = Flask("GPT4All-WebUI", static_url_path='/static', static_folder='static')
 class Gpt4AllWebUI():
     def __init__(self, chatbot_bindings, app, db_path='database.db') -> None:
         self.current_discussion = None
@@ -114,6 +139,12 @@ class Gpt4AllWebUI():
         self.add_endpoint('/export', 'export', self.export, methods=['GET'])
         self.add_endpoint('/new_discussion', 'new_discussion', self.new_discussion, methods=['GET'])
         self.add_endpoint('/bot', 'bot', self.bot, methods=['POST'])
+        self.add_endpoint('/discussions', 'discussions', self.discussions, methods=['GET'])
+        self.add_endpoint('/rename', 'rename', self.rename, methods=['POST'])
+        self.add_endpoint('/get_messages', 'get_messages', self.get_messages, methods=['POST'])
+        self.add_endpoint('/delete_discussion', 'delete_discussion', self.delete_discussion, methods=['POST'])
+        
+        
         # Chatbot conditionning
         # response = self.chatbot_bindings.prompt("This is a discussion between A user and an AI. AI responds to user questions in a helpful manner. AI is not allowed to lie or deceive. AI welcomes the user\n### Response:")
         # print(response)
@@ -195,7 +226,7 @@ class Gpt4AllWebUI():
                 return "\n".join(bot_says)
     def bot(self):
         self.stop=True
-        with sqlite3.connect('database.db') as conn:
+        with sqlite3.connect(self.db_path) as conn:
             try:
                 if self.current_discussion is None or not last_discussion_has_messages():
                     self.current_discussion=Discussion.create_discussion(self.db_path)
@@ -218,6 +249,40 @@ class Gpt4AllWebUI():
                 print(ex)
                 msg = traceback.print_exc()
                 return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+            
+    def discussions(self):
+        try:
+            discussions = Discussion.get_discussions(self.db_path)    
+            return jsonify(discussions)
+        except Exception as ex:
+            print(ex)
+            msg = traceback.print_exc()
+            return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+
+    def rename(self):
+        data = request.get_json()
+        id = data['id']
+        title = data['title']
+        Discussion.rename(self.db_path, id, title)    
+        return "renamed successfully"
+
+    def get_messages(self):
+        data = request.get_json()
+        id = data['id']
+        self.current_discussion = Discussion(id,self.db_path)
+        messages = self.current_discussion.get_messages()
+        return jsonify({"messages":messages})
+    
+
+    def delete_discussion(self):
+        data = request.get_json()
+        id = data['id']
+        self.current_discussion = Discussion(id, self.db_path)
+        self.current_discussion.delete_discussion()
+        self.current_discussion = None
+        return jsonify({})
+    
+
     def new_discussion(self):
         self.chatbot_bindings.close()
         self.chatbot_bindings.open()
