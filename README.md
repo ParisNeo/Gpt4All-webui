@@ -104,6 +104,7 @@ pip install nomic
 sudo apt install python3.11-venv
 ```
 
+![](https://user-images.githubusercontent.com/9384127/229801745-3c84e89e-c62c-460d-9e79-dafe5aa518d5.png)
 
 \- ToDo
 
