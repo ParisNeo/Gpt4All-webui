@@ -124,8 +124,7 @@ python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] 
 
 ![](https://user-images.githubusercontent.com/9384127/229809099-3ef4d87f-18ce-4873-b43b-e6f9d7accb50.png)
 
-![Magic Memes](https://www.memesmonkey.com/images/memesmonkey/77/771330e9f7a2a22e7b412187a657045c.jpeg)
-
+![Magic Memes](https://www.memesmonkey.com/images/memesmonkey/77/771330e9f7a2a22e7b412187a657045c.jpeg)😅
 ## Options
 
 *   `--port`: the port on which to run the server (default: 9600)
