@@ -118,6 +118,10 @@ To run the Flask server, execute the following command:
 python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
 ```
 
+![](https://user-images.githubusercontent.com/9384127/229806717-1b260484-723f-4780-b69b-d19c7375a84e.png)
+
+![](https://user-images.githubusercontent.com/9384127/229807131-623e9017-1536-473c-9e54-58d64f007991.png)
+
 ## Options
 
 *   `--port`: the port on which to run the server (default: 9600)
