@@ -2,7 +2,7 @@
 
 # Install Python 3.10 and pip
 echo -n "Checking for python3.10..."
-if command -v python3.10 > /dev/null 2>&1; then
+if command -v python3.11 > /dev/null 2>&1; then
   echo "OK"
 else
   read -p "Python3.10 is not installed. Would you like to install Python3.10? [Y/N] " choice
@@ -34,7 +34,7 @@ fi
 
 # Create a new virtual environment
 echo -n "Creating virtual environment..."
-python3.10 -m venv env
+python3.11 -m venv env
 if [ $? -ne 0 ]; then
   echo "Failed to create virtual environment. Please check your Python installation and try again."
   exit 1
