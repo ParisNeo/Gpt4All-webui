@@ -1,5 +1,7 @@
 from flask import Flask, jsonify, request, render_template, Response, stream_with_context
 from nomic.gpt4all import GPT4All
+from nomic.gpt4all.gpt4all import GPT4AllGPU
+
 import argparse
 import threading
 from io import StringIO
@@ -95,7 +97,21 @@ with sqlite3.connect(db_path) as conn:
         FOREIGN KEY (discussion_id) REFERENCES discussion(id)
     )
     ''')
+    
+    cur.execute("""
+    CREATE TABLE  IF NOT EXISTS ratings (
+        id INTEGER PRIMARY KEY,
+        discussion_id INTEGER,
+        timestamp TIMESTAMP,
+        rating TEXT,
+        message TEXT
+        );
+    """)
+    
     conn.commit()
+    
+
+    
 print("Ok")
 # ========================================================================================================================
 
@@ -114,9 +130,36 @@ class Gpt4AllWebUI():
         self.add_endpoint('/export', 'export', self.export, methods=['GET'])
         self.add_endpoint('/new_discussion', 'new_discussion', self.new_discussion, methods=['GET'])
         self.add_endpoint('/bot', 'bot', self.bot, methods=['POST'])
+        self.add_endpoint('/rate', 'rate', self.rate, methods=['POST'])
+
         # Chatbot conditionning
         # response = self.chatbot_bindings.prompt("This is a discussion between A user and an AI. AI responds to user questions in a helpful manner. AI is not allowed to lie or deceive. AI welcomes the user\n### Response:")
         # print(response)
+    
+    # Rating BETA
+    def rate(self):
+        rating = request.json['rating']
+        message = request.json['message']
+        print(f"Received rating {rating} with message {message}")
+        
+        # insert rating into database    def rate(self):
+        rating = request.json['rating']
+        message = request.json['message']
+        print(f"Received rating {rating} with message {message}")
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO ratings (discussion_id, timestamp, rating, message) VALUES (?, ?, ?, ?)",
+                        (self.current_discussion.discussion_id, datetime.now(), rating, message))
+            conn.commit()
+        return jsonify({'status': 'success'})
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("INSERT INTO ratings (discussion_id, timestamp, rating, message) VALUES (?, ?, ?, ?)",
+                        (self.current_discussion.discussion_id, datetime.now(), rating, message))
+            conn.commit()
+        
+        return jsonify({'status': 'success'})
+
 
     def add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET'], *args, **kwargs):
         self.app.add_url_rule(endpoint, endpoint_name, handler, methods=methods, *args, **kwargs)
@@ -134,8 +177,14 @@ class Gpt4AllWebUI():
             code_block = match.group(1)
             message = message.replace(code_block, f"<code>{code_block[3:-3]}</code>")
 
+        # Remove any newline characters from the message
+        message = message.replace('\n', ' ')
+
+        # Remove any quotation marks from the message
+        message = message.replace('"', '')
+
         # Return the formatted message
-        return message
+        return message.strip()
 
 
     def stream(self):
@@ -203,21 +252,29 @@ class Gpt4AllWebUI():
                 self.current_discussion.add_message("user", request.json['message'])    
                 message = f"{request.json['message']}"
                 print(f"Received message : {message}")
-                bot = self.chatbot_bindings.bot
-                bot.stdin.write(message.encode('utf-8'))
-                bot.stdin.write(b"\n")
-                bot.stdin.flush()
+                bot = self.chatbot_bindings
+                config = {'num_beams': 2,
+                          'min_new_tokens': 10,
+                          'max_length': 100,
+                          'repetition_penalty': 2.0}
+                
+                response = bot.generate(message, config)
+                self.current_discussion.add_message("bot", response)
 
-                # Segmented (the user receives the output as it comes)
-                return Response(stream_with_context(self.parse_to_prompt_stream()))
+                
+                
+                response = self.format_message(response)
+                return jsonify(response)
             
-                # One shot response (the user should wait for the message to apear at once.)
-                #response = format_message(self.chatbot_bindings.prompt(message, write_to_stdout=True).lstrip('# '))
-                #return jsonify(response)
             except Exception as ex:
                 print(ex)
                 msg = traceback.print_exc()
                 return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+
+
+
+
+            
     def new_discussion(self):
         self.chatbot_bindings.close()
         self.chatbot_bindings.open()
@@ -241,17 +298,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    chatbot_bindings = GPT4All(decoder_config = {
-                'temp': args.temp,
-                'n_predict':args.n_predict,
-                'top_k':args.top_k,
-                'top_p':args.top_p,
-                #'color': True,#"## Instruction",
-                'repeat_penalty': args.repeat_penalty,
-                'repeat_last_n':args.repeat_last_n,
-                'ctx_size': args.ctx_size
-            })
-    chatbot_bindings.open()  
+    chatbot_bindings = GPT4AllGPU("decapoda-research/llama-7b-hf")
+
     bot = Gpt4AllWebUI(chatbot_bindings, app, db_path)  
 
     if args.debug:
