@@ -113,7 +113,7 @@ function addBotMessage(sender, message) {
     
     const messageTextElement = document.createElement('div');
     messageTextElement.classList.add('font-medium', 'text-md');
-    messageTextElement.innerHTML = message
+    messageTextElement.innerHTML = message;
 
     // Create a hidden div element
     const hiddenElement = document.createElement('div');
@@ -122,6 +122,23 @@ function addBotMessage(sender, message) {
     
     messageElement.appendChild(senderElement);
     messageElement.appendChild(messageTextElement);
+    const ratingButtons = document.createElement('div');
+    ratingButtons.classList.add('rating-buttons');
+    const thumbsUpButton = document.createElement('button');
+    thumbsUpButton.classList.add('btn', 'btn-outline-success', 'btn-sm');
+    thumbsUpButton.innerHTML = '&#x1F44D;';
+    thumbsUpButton.addEventListener('click', () => {
+        rateResponse('thumbs-up');
+    });
+    const thumbsDownButton = document.createElement('button');
+    thumbsDownButton.classList.add('btn', 'btn-outline-danger', 'btn-sm');
+    thumbsDownButton.innerHTML = '&#x1F44E;';
+    thumbsDownButton.addEventListener('click', () => {
+        rateResponse('thumbs-down');
+    });
+    ratingButtons.appendChild(thumbsUpButton);
+    ratingButtons.appendChild(thumbsDownButton);
+    messageElement.appendChild(ratingButtons);
     chatWindow.appendChild(messageElement);
     chatWindow.appendChild(hiddenElement);
     
@@ -130,6 +147,7 @@ function addBotMessage(sender, message) {
 
     return {'messageTextElement':messageTextElement, 'hiddenElement':hiddenElement}
 }
+
 
 const exportButton = document.getElementById('export-button');
 
@@ -225,22 +243,7 @@ function add_collapsible_div(text, id){
 } 
 
 welcome_message = `
-Note:</b><br>
-<code>This is a very early testing Web UI of GPT4All chatbot.
-<br>Keep in mind that this is a 7B parameters model running on your own PC's CPU. It is literally 24 times smaller than GPT-3 in terms of parameter count.
-<br>While it is still new and not as powerful as GPT-3.5 or GPT-4, it can still be useful for many applications.
-<br>Any feedback and contribution is welcomed.
-<br>This Web UI is a binding to the GPT4All model that allows you to test a chatbot locally on your machine. Feel free to ask questions or give instructions.</code>
-
-<br>Examples:<br>
-<code>
-- A color description has been provided. Find the CSS code associated with that color. A light red color with a medium light shade of pink.<br>
-- Come up with an interesting idea for a new movie plot. Your plot should be described with a title and a summary.<br>
-- Reverse a string in python.<br>
-- List 10 dogs.<br>
-- Write me a poem about the fall of Julius Ceasar into a ceasar salad in iambic pentameter.<br>
-- What is a three word topic describing the following keywords: baseball, football, soccer:<br>
-</code>
+Note:This is a beta demo of GPT4All.
 `
 
 addBotMessage("GPT4ALL",welcome_message);
