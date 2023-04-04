@@ -98,6 +98,13 @@ pip install nomic
 
 ![](https://user-images.githubusercontent.com/9384127/229660570-a960cfc3-4634-4354-868f-259ba9ffe888.png)
 
+\- Install/updt venv 
+
+```
+sudo apt install python3.11-venv
+```
+
+
 \- ToDo
 
 These scripts will create a Python virtual environment and install the required dependencies.
