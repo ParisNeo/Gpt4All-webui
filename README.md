@@ -88,7 +88,7 @@ chmod +x install.sh
 
 ![](https://user-images.githubusercontent.com/9384127/229650379-e70a54b3-a8c0-44c6-a44f-26b96dfbcf4e.png)
 
-\-Install nomic 
+\- Install nomic 
 
 ```
 pip install nomic
@@ -97,6 +97,8 @@ pip install nomic
 ![](https://user-images.githubusercontent.com/9384127/229660511-ea6ef97e-712a-4e59-81d4-b4162e796728.png)
 
 ![](https://user-images.githubusercontent.com/9384127/229660570-a960cfc3-4634-4354-868f-259ba9ffe888.png)
+
+\- ToDo
 
 These scripts will create a Python virtual environment and install the required dependencies.
 
