@@ -35,7 +35,7 @@ It is important to understand that we are not responsible for any misuse of this
 
 5. Open the Linux distribution and follow the prompts to create a new user account.
 
-We apologize for any inconvenience this may cause. W
+We apologize for any inconvenience this may cause. We are working on a more widespread version.
 
 
 ## Installation
