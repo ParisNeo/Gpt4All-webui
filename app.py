@@ -239,6 +239,7 @@ class Gpt4AllWebUI():
                     if len(point) > 4:
                         point = b''
             else:
+                self.current_discussion.update_message(response_id,bot_says)
                 return "\n".join(bot_says)
             
     def bot(self):
