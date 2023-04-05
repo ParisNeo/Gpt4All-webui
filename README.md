@@ -31,17 +31,12 @@ It is important to understand that we are not responsible for any misuse of this
 
 **Note for Windows users:** At the moment, Nomic-AI has not provided a wheel for Windows, so you will need to use the app with the Windows Subsystem for Linux (WSL). To install WSL, follow these steps:
 
-Open the Windows Features settings (you can find this by searching for "Windows Features" in the Start menu).
-
-Enable the "Windows Subsystem for Linux" feature.
-
-Restart your computer when prompted.
-
-Install a Linux distribution from the Microsoft Store (e.g., Ubuntu).
-
-Open the Linux distribution and follow the prompts to create a new user account.
-
-We apologize for any inconvenience this may cause. We are working on a more widespread version.
+- Open the Windows Features settings (you can find this by searching for "Windows Features" in the Start menu).
+- Enable the "Windows Subsystem for Linux" feature.
+- Restart your computer when prompted.
+- Install a Linux distribution from the Microsoft Store (e.g., Ubuntu).
+- Open the Linux distribution and follow the prompts to create a new user account.
+- We apologize for any inconvenience this may cause. We are working on a more widespread version.
 
 ## Installation
 
@@ -50,7 +45,7 @@ To install the app, follow these steps:
 1.  Clone the GitHub repository:
 
 ```
-git clone https://github.com/higorvaz/Gpt4All-webui
+git clone https://github.com/ParisNeo/Gpt4All-webui
 ```
 
 1.  Navigate to the project directory:
@@ -63,89 +58,30 @@ cd Gpt4All-webui
 
 On Windows with WSL:
 
-When Nomic add windows support you would be able to use this :
+- When Nomic add windows support you would be able to use this :
 
-On Linux or macOS:
+  ```
+  install.bat
+  ```
+- On linux/ Mac os
 
-\- Install requirements  
-python3.11 -m pip install -r requirements.txt 
-
-![](https://user-images.githubusercontent.com/9384127/230159652-120e60f3-b737-434a-ac01-15819a0e7698.png)
-
-\- Review the install script 🙏🏻
-
-```
-nano -lASimYsh install.sh
-```
-
-![](https://user-images.githubusercontent.com/9384127/229646387-9fea98c6-fb13-496b-b8eb-9db6fe241556.png)
-
-\- Make it runnable
-
-```
-chmod +x install.sh
-```
-
-\- Run the install script
-
-```
+  ```
 ./install.sh
-```
+  ```
 
-![](https://user-images.githubusercontent.com/9384127/229650379-e70a54b3-a8c0-44c6-a44f-26b96dfbcf4e.png)
-
-\- Install nomic 
-
-```
-pip install nomic
-```
-
-or force pip to install with Python 3.11
-
-```
-python3.11 -m pip install nomic
-```
-
-![](https://user-images.githubusercontent.com/9384127/229660511-ea6ef97e-712a-4e59-81d4-b4162e796728.png)
-
-![](https://user-images.githubusercontent.com/9384127/229660570-a960cfc3-4634-4354-868f-259ba9ffe888.png)
-
-\- Install/updt venv 
-
-```
-sudo apt install python3.11-venv
-```
-
-![](https://user-images.githubusercontent.com/9384127/229801745-3c84e89e-c62c-460d-9e79-dafe5aa518d5.png)
-
-\- ToDo
+On Linux/MacOS, if you have issues, refer more details are presented [here](docs/Linux_Osx_Install.md)
 
 These scripts will create a Python virtual environment and install the required dependencies.
 
 ## Usage
 
 To run the Flask server, execute the following command:
-
-On Kali Linux it runned well but Ubuntu requires some upgrades:  
- - python3.11 -m pip install numpy --upgrade
-
 ```bash
 python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
 ```
 
-![](https://user-images.githubusercontent.com/9384127/229806717-1b260484-723f-4780-b69b-d19c7375a84e.png)
+On Linux/MacOS more details are [here](docs/Linux_Osx_Usage.md)
 
-![](https://user-images.githubusercontent.com/9384127/229807131-623e9017-1536-473c-9e54-58d64f007991.png)
-
-![](https://user-images.githubusercontent.com/9384127/229809099-3ef4d87f-18ce-4873-b43b-e6f9d7accb50.png)
-
-![Magic Memes](https://www.memesmonkey.com/images/memesmonkey/77/771330e9f7a2a22e7b412187a657045c.jpeg)
-
-😅
-
-?Root?
-
-![](https://user-images.githubusercontent.com/9384127/230199605-ab29926d-07dc-4d4d-9fd9-c51f9e117dfb.jpeg)
 
 ## Options
 
