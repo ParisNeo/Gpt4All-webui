@@ -152,4 +152,9 @@ This project is licensed under the Apache 2.0 License. See the [LICENSE](https:/
 
 ## Special thanks
 
-Special thanks to [cclaar-byte](https://github.com/cclaar-byte), [CybearWarfare](https://github.com/CybearWarfare) [Jan Brummelte](https://github.com/brummelte) for enhancing the UI.
+Special thanks to :
+- [cclaar-byte](https://github.com/cclaar-byte)
+- [CybearWarfare](https://github.com/CybearWarfare)
+- [Jan Brummelte](https://github.com/brummelte) 
+
+for their contributions.
