@@ -222,6 +222,7 @@ class Gpt4AllWebUI():
         #Now let's wait for the bot to answer
         while not self.stop:
             readable, _, _ = select.select([bot.stdout], [], [], wait_val)
+            wait_val = 4.0 # Once started, the process doesn't take that much so we reduce the wait
             if bot.stdout in readable:
                 point += bot.stdout.read(1)
                 try:

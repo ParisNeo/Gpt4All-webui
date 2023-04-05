@@ -55,7 +55,7 @@ chatForm.addEventListener('submit', event => {
                 {
                   // We parse it and
                   infos = JSON.parse(text)
-                  addMessage('User', infos.message, infos.id);
+                  addMessage('User', infos.message, infos.id, true);
                   elements = addMessage('GPT4ALL', '', infos.response_id, true);
                   messageTextElement=elements['messageTextElement'];
                   hiddenElement=elements['hiddenElement'];
@@ -99,6 +99,13 @@ function addMessage(sender, message, id, can_edit=false) {
   const messageTextElement = document.createElement('div');
   messageTextElement.classList.add('font-medium', 'text-md');
   messageTextElement.innerHTML = message;
+  // Create a hidden div element needed to buffer responses before commiting them to the visible message
+  const hiddenElement = document.createElement('div');
+  hiddenElement.style.display = 'none';
+  hiddenElement.innerHTML = '';  
+
+  messageElement.appendChild(senderElement);
+  messageElement.appendChild(messageTextElement);
   if(can_edit)
   {
     const editButton = document.createElement('button');
@@ -135,18 +142,7 @@ function addMessage(sender, message, id, can_edit=false) {
         messageElement.appendChild(saveButton);
         inputField.focus();
     });
-  }
 
-
-
-  // Create a hidden div element needed to buffer responses before commiting them to the visible message
-  const hiddenElement = document.createElement('div');
-  hiddenElement.style.display = 'none';
-  hiddenElement.innerHTML = '';  
-
-  messageElement.appendChild(senderElement);
-  messageElement.appendChild(messageTextElement);
-  if(can_edit){
     messageElement.appendChild(editButton);
   }
   chatWindow.appendChild(messageElement);
@@ -220,6 +216,11 @@ const newDiscussionBtn = document.querySelector('#new-discussion-btn');
 newDiscussionBtn.addEventListener('click', () => {
   const discussionName = prompt('Enter a name for the new discussion:');
   if (discussionName) {
+    const sendbtn = document.querySelector("#submit-input")
+    const waitAnimation = document.querySelector("#wait-animation")
+    sendbtn.style.display="none";
+    waitAnimation.style.display="block";
+
     // Add the discussion to the discussion list
     const discussionItem = document.createElement('li');
     discussionItem.textContent = discussionName;
@@ -227,11 +228,13 @@ newDiscussionBtn.addEventListener('click', () => {
     .then(response => response.json())
     .then(data => {
         console.log(`New chat ${data}`)
-        addMessage("GPT4ALL", welcome_message,0);
         // Select the new discussion
         //selectDiscussion(discussionId);
         chatWindow.innerHTML=""
+        addMessage("GPT4ALL", welcome_message,0);
         populate_discussions_list()
+        sendbtn.style.display="block";
+        waitAnimation.style.display="none";
     })
     .catch(error => {
       // Handle any errors that occur
