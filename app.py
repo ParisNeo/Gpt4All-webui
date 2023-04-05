@@ -271,7 +271,7 @@ class Gpt4AllWebUI():
         id = data['id']
         self.current_discussion = Discussion(id,self.db_path)
         messages = self.current_discussion.get_messages()
-        return jsonify({"messages":messages})
+        return jsonify(messages)
     
 
     def delete_discussion(self):

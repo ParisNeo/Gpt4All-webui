@@ -332,20 +332,22 @@ fetch('/discussions')
           })
           .then(response => {
             if (response.ok) {
-                var container = document.getElementById("chat-window");
-                container.innerHTML = "";
-                response.json().then(messages => {
-                    messages.forEach(message => {
-                        addUserMessage(message.sender, message.content);
-                    });
+              response.text().then(data => {
+                const messages = JSON.parse(data);
+                // process messages
+                var container = document.getElementById('chat-window');
+                container.innerHTML = '';
+                messages.forEach(message => {
+                  addUserMessage(message.sender, message.content);
                 });
+                  });
             } else {
-              alert('Failed to querry the discussion');
+              alert('Failed to query the discussion');
             }
           })
           .catch(error => {
-            console.error('Failed to rename discussion:', error);
-            alert('Failed to rename discussion');
+            console.error('Failed to get messages:', error);
+            alert('Failed to get messages');
           });
         console.log(`Showing messages for discussion ${discussion.id}`);
       });
