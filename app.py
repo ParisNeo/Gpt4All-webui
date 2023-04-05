@@ -16,7 +16,6 @@ import traceback
 import select
 
 #=================================== Database ==================================================================
-db_path = 'database.db'
 class Discussion:
     def __init__(self, discussion_id, db_path='database.db'):
         self.discussion_id = discussion_id
@@ -104,26 +103,29 @@ def remove_discussions(db_path='database.db'):
         conn.commit()
 
 # create database schema
-print("Checking discussions database...",end="")
-with sqlite3.connect(db_path) as conn:
-    cur = conn.cursor()
-    cur.execute('''
-    CREATE TABLE  IF NOT EXISTS discussion (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT
-    )
-    ''')
-    cur.execute('''
-    CREATE TABLE  IF NOT EXISTS message (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender TEXT NOT NULL,
-        content TEXT NOT NULL,
-        discussion_id INTEGER NOT NULL,
-        FOREIGN KEY (discussion_id) REFERENCES discussion(id)
-    )
-    ''')
-    conn.commit()
-print("Ok")
+def check_discussion_db(db_path):
+    print("Checking discussions database...")
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS discussion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS message (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender TEXT NOT NULL,
+                content TEXT NOT NULL,
+                discussion_id INTEGER NOT NULL,
+                FOREIGN KEY (discussion_id) REFERENCES discussion(id)
+            )
+        ''')
+        conn.commit()
+
+    print("Ok")
+
 # ========================================================================================================================
 
 
@@ -217,7 +219,7 @@ class Gpt4AllWebUI():
         self.stop=True
         with sqlite3.connect(self.db_path) as conn:
             try:
-                if self.current_discussion is None or not last_discussion_has_messages():
+                if self.current_discussion is None or not last_discussion_has_messages(self.db_path):
                     self.current_discussion=Discussion.create_discussion(self.db_path)
 
                 self.current_discussion.add_message("user", request.json['message'])    
@@ -274,7 +276,7 @@ class Gpt4AllWebUI():
 
     def new_discussion(self):
         tite = request.args.get('tite')
-        self.current_discussion= Discussion.create_discussion(db_path, tite)
+        self.current_discussion= Discussion.create_discussion(self.db_path, tite)
         # Get the current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -299,6 +301,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', dest='debug', action='store_true', help='launch Flask server in debug mode')
     parser.add_argument('--host', type=str, default='localhost', help='the hostname to listen on')
     parser.add_argument('--port', type=int, default=9600, help='the port to listen on')
+    parser.add_argument('--db_path', type=str, default='database.db', help='Database path')
     parser.set_defaults(debug=False)
 
     args = parser.parse_args()
@@ -313,8 +316,9 @@ if __name__ == '__main__':
                 'repeat_last_n':args.repeat_last_n,
                 'ctx_size': args.ctx_size
             })
-    chatbot_bindings.open()  
-    bot = Gpt4AllWebUI(chatbot_bindings, app, db_path)  
+    chatbot_bindings.open()
+    check_discussion_db(args.db_path)
+    bot = Gpt4AllWebUI(chatbot_bindings, app, args.db_path)
 
     if args.debug:
         app.run(debug=True, host=args.host, port=args.port)
