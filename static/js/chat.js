@@ -130,11 +130,13 @@ function addMessage(sender, message, id, can_edit=false) {
                   if (!response.ok) {
                       throw new Error('Network response was not ok');
                   }
+
               })
               .catch(error => {
                   console.error('There was a problem updating the message:', error);
               });
-            messageElement.removeChild(inputField);
+            messageElement.replaceChild(messageTextElement, inputField);
+            //messageElement.removeChild(inputField);
             messageElement.removeChild(saveButton);
         });
   
