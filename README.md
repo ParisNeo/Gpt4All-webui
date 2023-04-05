@@ -217,5 +217,6 @@ Special thanks to :
 - [cclaar-byte](https://github.com/cclaar-byte)
 - [CybearWarfare](https://github.com/CybearWarfare)
 - [Jan Brummelte](https://github.com/brummelte) 
+- [higorvaz](https://github.com/higorvaz)
 
 for their contributions.
