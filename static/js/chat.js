@@ -10,11 +10,6 @@ chatForm.addEventListener('submit', event => {
     userInput.value = '';
     
     // add user message to chat window
-    addUserMessage('User', message);
-    elements = addBotMessage('GPT4ALL', '');
-    messageTextElement=elements['messageTextElement'];
-    hiddenElement=elements['hiddenElement'];
-    last_reception_is_f=false;
     const sendbtn = document.querySelector("#submit-input")
     const waitAnimation = document.querySelector("#wait-animation")
     sendbtn.style.display="none";
@@ -46,33 +41,43 @@ chatForm.addEventListener('submit', event => {
         });
         const textDecoder = new TextDecoder();
         const readableStreamDefaultReader = stream.getReader();
+        let entry_counter = 0
         function readStream() {
             readableStreamDefaultReader.read().then(function(result) {
                 if (result.done) {
                     return;
                 }
-                text = textDecoder.decode(result.value);
-                for (const char of text) {
-                    if (last_reception_is_f){
-                      // start a new message
-                        elements = addBotMessage('GPT4ALL', '');
-                        messageTextElement=elements['messageTextElement'];
-                        hiddenElement=elements['hiddenElement'];
-                        last_reception_is_f = false;
-                    }
 
-                    if (char === '\f') {
-                        last_reception_is_f = true;                    
-                    }
-                    else{
+                text = textDecoder.decode(result.value);
+
+                // The server will first send a json containing information about the message just sent
+                console.log(text)
+                if(entry_counter==0)
+                {
+                  // We parse it and
+                  infos = JSON.parse(text)
+                  addUserMessage('User', infos.message, infos.id);
+                  elements = addUserMessage('GPT4ALL', '', infos.response_id);
+                  messageTextElement=elements['messageTextElement'];
+                  hiddenElement=elements['hiddenElement'];
+                  entry_counter ++;
+                }
+                else{
+                  // For the other enrtries, these are just the text of the chatbot
+                  for (const char of text) {
                         txt = hiddenElement.innerHTML;
-                        txt += char
-                        hiddenElement.innerHTML = txt
-                        messageTextElement.innerHTML = txt.replace(/\n/g, "<br>")
-                    }
+                        if (char != '\f') {
+                          txt += char
+                          hiddenElement.innerHTML = txt
+                          messageTextElement.innerHTML = txt.replace(/\n/g, "<br>")
+                        }
+
                     // scroll to bottom of chat window
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                   }
+                  entry_counter ++;   
+                }
+
                 readStream();
             });
         }
@@ -82,25 +87,75 @@ chatForm.addEventListener('submit', event => {
 });
 
 
-function addUserMessage(sender, message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
-    messageElement.classList.add(sender);
-    const senderElement = document.createElement('div');
-    senderElement.classList.add('font-normal', 'underline', 'text-sm');
-    senderElement.innerHTML = sender;
-    
-    const messageTextElement = document.createElement('div');
-    messageTextElement.classList.add('font-medium', 'text-md');
-    messageTextElement.innerHTML = message;
-    
-    messageElement.appendChild(senderElement);
-    messageElement.appendChild(messageTextElement);
-    chatWindow.appendChild(messageElement);
-    
-    // scroll to bottom of chat window
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+function addUserMessage(sender, message, id) {
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
+  messageElement.classList.add(sender);
+  messageElement.setAttribute('id', id);
+
+  const senderElement = document.createElement('div');
+  senderElement.classList.add('font-normal', 'underline', 'text-sm');
+  senderElement.innerHTML = sender;
+
+  const messageTextElement = document.createElement('div');
+  messageTextElement.classList.add('font-medium', 'text-md');
+  messageTextElement.innerHTML = message;
+
+  const editButton = document.createElement('button');
+  editButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'my-2');
+  editButton.innerHTML = 'Edit';
+  editButton.addEventListener('click', () => {
+      const inputField = document.createElement('input');
+      inputField.type = 'text';
+      inputField.classList.add('font-medium', 'text-md', 'border', 'border-gray-300', 'p-1');
+      inputField.value = messageTextElement.innerHTML;
+
+      const saveButton = document.createElement('button');
+      saveButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'my-2', 'ml-2');
+      saveButton.innerHTML = 'Save';
+      saveButton.addEventListener('click', () => {
+          const newText = inputField.value;
+          messageTextElement.innerHTML = newText;
+          // make request to update message
+          const url = `/update_message?id=${id}&message=${newText}`;
+          fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+            })
+            .catch(error => {
+                console.error('There was a problem updating the message:', error);
+            });
+          messageElement.removeChild(inputField);
+          messageElement.removeChild(saveButton);
+      });
+
+      messageElement.replaceChild(inputField, messageTextElement);
+      messageElement.appendChild(saveButton);
+      inputField.focus();
+  });
+
+
+  // Create a hidden div element needed to buffer responses before commiting them to the visible message
+  const hiddenElement = document.createElement('div');
+  hiddenElement.style.display = 'none';
+  hiddenElement.innerHTML = '';  
+
+  messageElement.appendChild(senderElement);
+  messageElement.appendChild(messageTextElement);
+  messageElement.appendChild(editButton);
+  chatWindow.appendChild(messageElement);
+  chatWindow.appendChild(hiddenElement);
+
+  // scroll to bottom of chat window
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  // Return all needed stuff
+  return {'messageTextElement':messageTextElement, 'hiddenElement':hiddenElement}
 }
+
+
 
 
 function addBotMessage(sender, message) {
@@ -207,165 +262,171 @@ newDiscussionBtn.addEventListener('click', () => {
     // Select the new discussion
     //selectDiscussion(discussionId);
     chatWindow.innerHTML=""
+    populate_discussions_list()
   }
 });
 
-// Populate discussions list
-const discussionsList = document.querySelector('#discussions-list');
-fetch('/discussions')
-  .then(response => response.json())
-  .then(discussions => {
-    discussions.forEach(discussion => {
-      const buttonWrapper = document.createElement('div');
-      buttonWrapper.classList.add('flex', 'space-x-2', 'mt-2');
+function populate_discussions_list()
+{
+  // Populate discussions list
+  const discussionsList = document.querySelector('#discussions-list');
+  discussionsList.innerHTML = "";
+  fetch('/discussions')
+    .then(response => response.json())
+    .then(discussions => {
+      discussions.forEach(discussion => {
+        const buttonWrapper = document.createElement('div');
+        buttonWrapper.classList.add('flex', 'space-x-2', 'mt-2');
 
-      const renameButton = document.createElement('button');
-      renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
-      const renameImg = document.createElement('img');
-      renameImg.src = "/static/images/edit_discussion.png";
-      renameImg.style.width='20px'
-      renameImg.style.height='20px'
-      renameButton.appendChild(renameImg);
+        const renameButton = document.createElement('button');
+        renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
+        const renameImg = document.createElement('img');
+        renameImg.src = "/static/images/edit_discussion.png";
+        renameImg.style.width='20px'
+        renameImg.style.height='20px'
+        renameButton.appendChild(renameImg);
 
-      //renameButton.style.backgroundImage = "/rename_discussion.svg"; //.textContent = 'Rename';
-      renameButton.addEventListener('click', () => {
-        const dialog = document.createElement('dialog');
-        dialog.classList.add('bg-white', 'rounded', 'p-4');
+        //renameButton.style.backgroundImage = "/rename_discussion.svg"; //.textContent = 'Rename';
+        renameButton.addEventListener('click', () => {
+          const dialog = document.createElement('dialog');
+          dialog.classList.add('bg-white', 'rounded', 'p-4');
 
-        const inputLabel = document.createElement('label');
-        inputLabel.textContent = 'New name: ';
-        const inputField = document.createElement('input');
-        inputField.classList.add('border', 'border-gray-400', 'rounded', 'py-1', 'px-2');
-        inputField.setAttribute('type', 'text');
-        inputField.setAttribute('name', 'title');
-        inputField.setAttribute('value', discussion.title);
-        inputLabel.appendChild(inputField);
-        dialog.appendChild(inputLabel);
+          const inputLabel = document.createElement('label');
+          inputLabel.textContent = 'New name: ';
+          const inputField = document.createElement('input');
+          inputField.classList.add('border', 'border-gray-400', 'rounded', 'py-1', 'px-2');
+          inputField.setAttribute('type', 'text');
+          inputField.setAttribute('name', 'title');
+          inputField.setAttribute('value', discussion.title);
+          inputLabel.appendChild(inputField);
+          dialog.appendChild(inputLabel);
 
-        const cancelButton = document.createElement('button');
-        cancelButton.textContent = 'Cancel';
-        cancelButton.addEventListener('click', () => {
-          dialog.close();
+          const cancelButton = document.createElement('button');
+          cancelButton.textContent = 'Cancel';
+          cancelButton.addEventListener('click', () => {
+            dialog.close();
+          });
+
+          const renameConfirmButton = document.createElement('button');
+          renameConfirmButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'ml-2');
+          renameConfirmButton.textContent = 'Rename';
+          renameConfirmButton.addEventListener('click', () => {
+            const newTitle = inputField.value;
+            if (newTitle === '') {
+              alert('New name cannot be empty');
+            } else {
+              fetch('/rename', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: discussion.id, title: newTitle })
+              })
+              .then(response => {
+                if (response.ok) {
+                  discussion.title = newTitle;
+                  discussionButton.textContent = newTitle;
+                  dialog.close();
+                } else {
+                  alert('Failed to rename discussion');
+                }
+              })
+              .catch(error => {
+                console.error('Failed to rename discussion:', error);
+                alert('Failed to rename discussion');
+              });
+            }
+          });
+      
+          dialog.appendChild(cancelButton);
+          dialog.appendChild(renameConfirmButton);
+          document.body.appendChild(dialog);
+          dialog.showModal();
         });
+        const deleteButton = document.createElement('button');
+        deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
+        const deleteImg = document.createElement('img');
+        deleteImg.src = "/static/images/delete_discussion.png";
+        deleteImg.style.width='20px'
+        deleteImg.style.height='20px'
 
-        const renameConfirmButton = document.createElement('button');
-        renameConfirmButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'ml-2');
-        renameConfirmButton.textContent = 'Rename';
-        renameConfirmButton.addEventListener('click', () => {
-          const newTitle = inputField.value;
-          if (newTitle === '') {
-            alert('New name cannot be empty');
-          } else {
-            fetch('/rename', {
+        deleteButton.addEventListener('click', () => {
+          fetch('/delete_discussion', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ id: discussion.id, title: newTitle })
+              body: JSON.stringify({ id: discussion.id})
             })
             .then(response => {
               if (response.ok) {
-                discussion.title = newTitle;
-                discussionButton.textContent = newTitle;
-                dialog.close();
+                  buttonWrapper.remove();
               } else {
-                alert('Failed to rename discussion');
+                alert('Failed to delete discussion');
               }
             })
             .catch(error => {
-              console.error('Failed to rename discussion:', error);
-              alert('Failed to rename discussion');
-            });
-          }
-        });
-    
-        dialog.appendChild(cancelButton);
-        dialog.appendChild(renameConfirmButton);
-        document.body.appendChild(dialog);
-        dialog.showModal();
-      });
-      const deleteButton = document.createElement('button');
-      deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
-      const deleteImg = document.createElement('img');
-      deleteImg.src = "/static/images/delete_discussion.png";
-      deleteImg.style.width='20px'
-      deleteImg.style.height='20px'
-
-      deleteButton.addEventListener('click', () => {
-        fetch('/delete_discussion', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id: discussion.id})
-          })
-          .then(response => {
-            if (response.ok) {
-                buttonWrapper.remove();
-            } else {
+              console.error('Failed to delete discussion:', error);
               alert('Failed to delete discussion');
-            }
-          })
-          .catch(error => {
-            console.error('Failed to delete discussion:', error);
-            alert('Failed to delete discussion');
-          });        
-        
-      });
+            });        
+          
+        });
 
-      deleteButton.appendChild(deleteImg);
-      deleteButton.addEventListener('click', () => {
+        deleteButton.appendChild(deleteImg);
+        deleteButton.addEventListener('click', () => {
 
-      });
+        });
 
-      const discussionButton = document.createElement('button');
-      discussionButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
-      discussionButton.textContent = discussion.title;
-      discussionButton.addEventListener('click', () => {
-        // send query with discussion id to reveal discussion messages
-        fetch('/get_messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id: discussion.id })
-          })
-          .then(response => {
-            if (response.ok) {
-              response.text().then(data => {
-                const messages = JSON.parse(data);
-                console.log(messages)
-                // process messages
-                var container = document.getElementById('chat-window');
-                container.innerHTML = '';
-                messages.forEach(message => {
-                  addUserMessage(message.sender, message.content);
-                });
+        const discussionButton = document.createElement('button');
+        discussionButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
+        discussionButton.textContent = discussion.title;
+        discussionButton.addEventListener('click', () => {
+          // send query with discussion id to reveal discussion messages
+          fetch('/get_messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ id: discussion.id })
+            })
+            .then(response => {
+              if (response.ok) {
+                response.text().then(data => {
+                  const messages = JSON.parse(data);
+                  console.log(messages)
+                  // process messages
+                  var container = document.getElementById('chat-window');
+                  container.innerHTML = '';
+                  messages.forEach(message => {
+                    addUserMessage(message.sender, message.content, message.id);
                   });
-            } else {
-              alert('Failed to query the discussion');
-            }
-          })
-          .catch(error => {
-            console.error('Failed to get messages:', error);
-            alert('Failed to get messages');
-          });
-        console.log(`Showing messages for discussion ${discussion.id}`);
+                    });
+              } else {
+                alert('Failed to query the discussion');
+              }
+            })
+            .catch(error => {
+              console.error('Failed to get messages:', error);
+              alert('Failed to get messages');
+            });
+          console.log(`Showing messages for discussion ${discussion.id}`);
+        });
+
+
+        buttonWrapper.appendChild(renameButton);
+        buttonWrapper.appendChild(deleteButton);
+        buttonWrapper.appendChild(discussionButton);
+        discussionsList.appendChild(buttonWrapper);
       });
+  })
+  .catch(error => {
+  console.error('Failed to get discussions:', error);
+  alert('Failed to get discussions');
+  });
+}
 
-
-      buttonWrapper.appendChild(renameButton);
-      buttonWrapper.appendChild(deleteButton);
-      buttonWrapper.appendChild(discussionButton);
-      discussionsList.appendChild(buttonWrapper);
-    });
-})
-.catch(error => {
-console.error('Failed to get discussions:', error);
-alert('Failed to get discussions');
-});
-
-
+// First time we populate the discussions list
+populate_discussions_list()
 
 
 

@@ -39,7 +39,9 @@ class Discussion:
             cur = conn.cursor()
             cur.execute('INSERT INTO message (sender, content, discussion_id) VALUES (?, ?, ?)',
                          (sender, content, self.discussion_id))
+            message_id = cur.lastrowid
             conn.commit()
+        return message_id
     @staticmethod
     def get_discussions(db_path):
         with sqlite3.connect(db_path) as conn:
@@ -68,6 +70,14 @@ class Discussion:
             cur.execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
             rows = cur.fetchall()
         return [{'sender': row[1], 'content': row[2]} for row in rows]
+    
+
+
+    def update_message(self, message_id, new_content):
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute('UPDATE message SET content = ? WHERE id = ?', (new_content, message_id))
+            conn.commit()
 
     def remove_discussion(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -139,7 +149,6 @@ class Gpt4AllWebUI():
         self.db_path= db_path
         self.add_endpoint('/', '', self.index, methods=['GET'])
         self.add_endpoint('/stream', 'stream', self.stream, methods=['GET'])
-        self.add_endpoint('/new-discussion', 'new-discussion', self.new_discussion, methods=['POST'])
         self.add_endpoint('/export', 'export', self.export, methods=['GET'])
         self.add_endpoint('/new_discussion', 'new_discussion', self.new_discussion, methods=['GET'])
         self.add_endpoint('/bot', 'bot', self.bot, methods=['POST'])
@@ -147,6 +156,9 @@ class Gpt4AllWebUI():
         self.add_endpoint('/rename', 'rename', self.rename, methods=['POST'])
         self.add_endpoint('/get_messages', 'get_messages', self.get_messages, methods=['POST'])
         self.add_endpoint('/delete_discussion', 'delete_discussion', self.delete_discussion, methods=['POST'])
+
+        self.add_endpoint('/update_message', 'update_message', self.update_message, methods=['GET'])
+        
         
         
         # Chatbot conditionning
@@ -187,27 +199,39 @@ class Gpt4AllWebUI():
 
 
     @stream_with_context
-    def parse_to_prompt_stream(self):
+    def parse_to_prompt_stream(self, message, message_id):
         bot_says = ['']
         point = b''
         bot = self.chatbot_bindings.bot
         self.stop=False
+
+        # very important. This is the maximum time we wait for the model
         wait_val = 15.0 # At the beginning the server may need time to send data. we wait 15s
+
+        # send the message to the bot
+        print(f"Received message : {message}")
+        bot = self.chatbot_bindings.bot
+        bot.stdin.write(message.encode('utf-8'))
+        bot.stdin.write(b"\n")
+        bot.stdin.flush()
+
+        # First we need to send the new message ID to the client
+        response_id = self.current_discussion.add_message("GPT4All",'') # first the content is empty, but we'll fill it at the end
+        yield(json.dumps({'type':'input_message_infos','message':message, 'id':message_id, 'response_id':response_id}))
+
+        #Now let's wait for the bot to answer
         while not self.stop:
             readable, _, _ = select.select([bot.stdout], [], [], wait_val)
             if bot.stdout in readable:
                 point += bot.stdout.read(1)
                 try:
                     character = point.decode("utf-8")
-                    wait_val=1.0 # Reduce the wait duration to 1s
-                    # if character == "\f": # We've replaced the delimiter character with this.
-                    #    return "\n".join(bot_says)
                     if character == "\n":
                         bot_says.append('\n')
                         yield '\n'
                     else:
                         bot_says[-1] += character
-                        yield character
+                    yield character
                     point = b''
 
                 except UnicodeDecodeError:
@@ -215,6 +239,7 @@ class Gpt4AllWebUI():
                         point = b''
             else:
                 return "\n".join(bot_says)
+            
     def bot(self):
         self.stop=True
         with sqlite3.connect(self.db_path) as conn:
@@ -222,20 +247,12 @@ class Gpt4AllWebUI():
                 if self.current_discussion is None or not last_discussion_has_messages(self.db_path):
                     self.current_discussion=Discussion.create_discussion(self.db_path)
 
-                self.current_discussion.add_message("user", request.json['message'])    
+                message_id = self.current_discussion.add_message("user", request.json['message'])    
                 message = f"{request.json['message']}"
-                print(f"Received message : {message}")
-                bot = self.chatbot_bindings.bot
-                bot.stdin.write(message.encode('utf-8'))
-                bot.stdin.write(b"\n")
-                bot.stdin.flush()
 
                 # Segmented (the user receives the output as it comes)
-                return Response(stream_with_context(self.parse_to_prompt_stream()))
-            
-                # One shot response (the user should wait for the message to apear at once.)
-                #response = format_message(self.chatbot_bindings.prompt(message, write_to_stdout=True).lstrip('# '))
-                #return jsonify(response)
+                # We will first send a json entry that contains the message id and so on, then the text as it goes
+                return Response(stream_with_context(self.parse_to_prompt_stream(message, message_id)))
             except Exception as ex:
                 print(ex)
                 msg = traceback.print_exc()
@@ -273,6 +290,16 @@ class Gpt4AllWebUI():
         self.current_discussion = None
         return jsonify({})
     
+    def update_message(self):
+        try:
+            id = request.args.get('id')
+            new_message = request.args.get('message')
+            self.current_discussion.update_message(id, new_message)
+            return
+        except Exception as ex:
+            print(ex)
+            msg = traceback.print_exc()
+            return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
 
     def new_discussion(self):
         tite = request.args.get('tite')
