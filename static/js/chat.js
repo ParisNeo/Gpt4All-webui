@@ -87,6 +87,7 @@ chatForm.addEventListener('submit', event => {
 
 
 function addMessage(sender, message, id, can_edit=false) {
+  console.log(id)
   const messageElement = document.createElement('div');
   messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
   messageElement.classList.add(sender);
@@ -130,7 +131,9 @@ function addMessage(sender, message, id, can_edit=false) {
                   if (!response.ok) {
                       throw new Error('Network response was not ok');
                   }
-
+                  else{
+                    console.log("Updated")
+                  }
               })
               .catch(error => {
                   console.error('There was a problem updating the message:', error);

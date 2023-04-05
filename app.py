@@ -69,7 +69,7 @@ class Discussion:
             cur = conn.cursor()
             cur.execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
             rows = cur.fetchall()
-        return [{'sender': row[1], 'content': row[2]} for row in rows]
+        return [{'sender': row[1], 'content': row[2], 'id':row[0]} for row in rows]
     
 
 
