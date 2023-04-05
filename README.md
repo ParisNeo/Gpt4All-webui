@@ -98,6 +98,11 @@ chmod +x install.sh
 ```
 pip install nomic
 ```
+or force pip to install with Python 3.11
+
+```
+python3.11 -m pip install nomic
+```
 
 ![](https://user-images.githubusercontent.com/9384127/229660511-ea6ef97e-712a-4e59-81d4-b4162e796728.png)
 
