@@ -142,6 +142,10 @@ python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] 
 
 😅
 
+?Root?
+
+![](https://user-images.githubusercontent.com/9384127/230199605-ab29926d-07dc-4d4d-9fd9-c51f9e117dfb.jpeg)
+
 ## Options
 
 *   `--port`: the port on which to run the server (default: 9600)
