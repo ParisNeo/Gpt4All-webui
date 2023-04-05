@@ -461,7 +461,7 @@ function add_collapsible_div(discussion_title, text, id) {
     return box
   }
 
-const text = `
+const welcome_message = `
 <div>
 <code>This is a very early testing Web UI of GPT4All chatbot.
 <br>Keep in mind that this is a 7B parameters model running on your own PC's CPU. It is literally 24 times smaller than GPT-3 in terms of parameter count.
@@ -483,7 +483,7 @@ const text = `
 `;
 //welcome_message = add_collapsible_div("Note:", text, 'hints');
 
-addBotMessage("GPT4ALL",text);
+addBotMessage("GPT4ALL",welcome_message);
 
 // Code for collapsable text
 const collapsibles = document.querySelectorAll('.collapsible');
