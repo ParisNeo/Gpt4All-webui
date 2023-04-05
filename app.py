@@ -16,7 +16,6 @@ import traceback
 import select
 
 #=================================== Database ==================================================================
-db_path = 'database.db'
 class Discussion:
     def __init__(self, discussion_id, db_path='database.db'):
         self.discussion_id = discussion_id
@@ -30,6 +29,10 @@ class Discussion:
             discussion_id = cur.lastrowid
             conn.commit()
         return Discussion(discussion_id, db_path)
+    
+    @staticmethod
+    def get_discussion(db_path='database.db', id=0):
+        return Discussion(id, db_path)
 
     def add_message(self, sender, content):
         with sqlite3.connect(self.db_path) as conn:
@@ -37,11 +40,34 @@ class Discussion:
             cur.execute('INSERT INTO message (sender, content, discussion_id) VALUES (?, ?, ?)',
                          (sender, content, self.discussion_id))
             conn.commit()
+    @staticmethod
+    def get_discussions(db_path):
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM discussion')
+            rows = cursor.fetchall()
+        return [{'id': row[0], 'title': row[1]} for row in rows]
+
+    @staticmethod
+    def rename(db_path, discussion_id, title):
+        with sqlite3.connect(db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE discussion SET title=? WHERE id=?', (title, discussion_id))
+            conn.commit()
+
+    def delete_discussion(self):
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            cur.execute('DELETE FROM message WHERE discussion_id=?', (self.discussion_id,))
+            cur.execute('DELETE FROM discussion WHERE id=?', (self.discussion_id,))
+            conn.commit()
 
     def get_messages(self):
         with sqlite3.connect(self.db_path) as conn:
-            conn.cursor().execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
-        return [{'sender': row[1], 'content': row[2]} for row in conn.cursor().fetchall()]
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
+            rows = cur.fetchall()
+        return [{'sender': row[1], 'content': row[2]} for row in rows]
 
     def remove_discussion(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -77,31 +103,34 @@ def remove_discussions(db_path='database.db'):
         conn.commit()
 
 # create database schema
-print("Checking discussions database...",end="")
-with sqlite3.connect(db_path) as conn:
-    cur = conn.cursor()
-    cur.execute('''
-    CREATE TABLE  IF NOT EXISTS discussion (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT
-    )
-    ''')
-    cur.execute('''
-    CREATE TABLE  IF NOT EXISTS message (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sender TEXT NOT NULL,
-        content TEXT NOT NULL,
-        discussion_id INTEGER NOT NULL,
-        FOREIGN KEY (discussion_id) REFERENCES discussion(id)
-    )
-    ''')
-    conn.commit()
-print("Ok")
+def check_discussion_db(db_path):
+    print("Checking discussions database...")
+    with sqlite3.connect(db_path) as conn:
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS discussion (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS message (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender TEXT NOT NULL,
+                content TEXT NOT NULL,
+                discussion_id INTEGER NOT NULL,
+                FOREIGN KEY (discussion_id) REFERENCES discussion(id)
+            )
+        ''')
+        conn.commit()
+
+    print("Ok")
+
 # ========================================================================================================================
 
 
 
-app = Flask("GPT4All-WebUI")
+app = Flask("GPT4All-WebUI", static_url_path='/static', static_folder='static')
 class Gpt4AllWebUI():
     def __init__(self, chatbot_bindings, app, db_path='database.db') -> None:
         self.current_discussion = None
@@ -114,6 +143,12 @@ class Gpt4AllWebUI():
         self.add_endpoint('/export', 'export', self.export, methods=['GET'])
         self.add_endpoint('/new_discussion', 'new_discussion', self.new_discussion, methods=['GET'])
         self.add_endpoint('/bot', 'bot', self.bot, methods=['POST'])
+        self.add_endpoint('/discussions', 'discussions', self.discussions, methods=['GET'])
+        self.add_endpoint('/rename', 'rename', self.rename, methods=['POST'])
+        self.add_endpoint('/get_messages', 'get_messages', self.get_messages, methods=['POST'])
+        self.add_endpoint('/delete_discussion', 'delete_discussion', self.delete_discussion, methods=['POST'])
+        
+        
         # Chatbot conditionning
         # response = self.chatbot_bindings.prompt("This is a discussion between A user and an AI. AI responds to user questions in a helpful manner. AI is not allowed to lie or deceive. AI welcomes the user\n### Response:")
         # print(response)
@@ -146,19 +181,6 @@ class Gpt4AllWebUI():
                 time.sleep(1)
 
         return Response(stream_with_context(generate()))
-
-    def new_discussion(self):        
-        tite = request.args.get('tite')
-        self.current_discussion= Discussion.create_discussion(db_path, tite)
-        # Get the current timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Insert a new discussion into the database
-        conn.cursor().execute("INSERT INTO discussions (created_at) VALUES (?)", (timestamp,))
-        conn.commit()
-
-        # Return a success response
-        return json.dumps({'id': self.current_discussion.discussion_id})
 
     def export(self):
         return jsonify(export_to_json(self.db_path))
@@ -195,9 +217,9 @@ class Gpt4AllWebUI():
                 return "\n".join(bot_says)
     def bot(self):
         self.stop=True
-        with sqlite3.connect('database.db') as conn:
+        with sqlite3.connect(self.db_path) as conn:
             try:
-                if self.current_discussion is None or not last_discussion_has_messages():
+                if self.current_discussion is None or not last_discussion_has_messages(self.db_path):
                     self.current_discussion=Discussion.create_discussion(self.db_path)
 
                 self.current_discussion.add_message("user", request.json['message'])    
@@ -218,11 +240,53 @@ class Gpt4AllWebUI():
                 print(ex)
                 msg = traceback.print_exc()
                 return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+            
+    def discussions(self):
+        try:
+            discussions = Discussion.get_discussions(self.db_path)    
+            return jsonify(discussions)
+        except Exception as ex:
+            print(ex)
+            msg = traceback.print_exc()
+            return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+
+    def rename(self):
+        data = request.get_json()
+        id = data['id']
+        title = data['title']
+        Discussion.rename(self.db_path, id, title)    
+        return "renamed successfully"
+
+    def get_messages(self):
+        data = request.get_json()
+        id = data['id']
+        self.current_discussion = Discussion(id,self.db_path)
+        messages = self.current_discussion.get_messages()
+        return jsonify(messages)
+    
+
+    def delete_discussion(self):
+        data = request.get_json()
+        id = data['id']
+        self.current_discussion = Discussion(id, self.db_path)
+        self.current_discussion.delete_discussion()
+        self.current_discussion = None
+        return jsonify({})
+    
+
     def new_discussion(self):
+        tite = request.args.get('tite')
+        self.current_discussion= Discussion.create_discussion(self.db_path, tite)
+        # Get the current timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # add a new discussion
         self.chatbot_bindings.close()
         self.chatbot_bindings.open()
-        print("chatbot reset successfully")
-        return "chatbot reset successfully"
+
+        # Return a success response
+        return json.dumps({'id': self.current_discussion.discussion_id})
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start the chatbot Flask app.')
@@ -237,6 +301,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', dest='debug', action='store_true', help='launch Flask server in debug mode')
     parser.add_argument('--host', type=str, default='localhost', help='the hostname to listen on')
     parser.add_argument('--port', type=int, default=9600, help='the port to listen on')
+    parser.add_argument('--db_path', type=str, default='database.db', help='Database path')
     parser.set_defaults(debug=False)
 
     args = parser.parse_args()
@@ -251,8 +316,9 @@ if __name__ == '__main__':
                 'repeat_last_n':args.repeat_last_n,
                 'ctx_size': args.ctx_size
             })
-    chatbot_bindings.open()  
-    bot = Gpt4AllWebUI(chatbot_bindings, app, db_path)  
+    chatbot_bindings.open()
+    check_discussion_db(args.db_path)
+    bot = Gpt4AllWebUI(chatbot_bindings, app, args.db_path)
 
     if args.debug:
         app.run(debug=True, host=args.host, port=args.port)

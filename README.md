@@ -25,8 +25,7 @@ The model used by GPT4ALL has been fine-tuned using the LORA technique on LLAMA 
 It is important to understand that we are not responsible for any misuse of this tool. Please use it responsibly and at your own risk. While we hope that Nomic will address this issue in the future by providing clean weights that can be used freely, for now, this model is intended for testing purposes only.
 
 ## UI screenshot
-
-![image](https://user-images.githubusercontent.com/827993/229349273-221b6bfc-475e-4be3-8d98-fb8f0036df8e.png)
+![image](https://user-images.githubusercontent.com/827993/229951093-27114d9f-0e1f-4d84-b103-e35cd3f9310d.png)
 
 **Note for Windows users:** At the moment, Nomic-AI has not provided a wheel for Windows, so you will need to use the app with the Windows Subsystem for Linux (WSL). To install WSL, follow these steps:
 
@@ -40,7 +39,7 @@ Install a Linux distribution from the Microsoft Store (e.g., Ubuntu).
 
 Open the Linux distribution and follow the prompts to create a new user account.
 
-We apologize for any inconvenience this may cause. W
+We apologize for any inconvenience this may cause. We are working on a more widespread version.
 
 ## Installation
 
@@ -211,12 +210,10 @@ This project is licensed under the Apache 2.0 License. See the [LICENSE](https:/
 
 ## Special thanks
 
-Special thanks to [cclaar-byte](https://github.com/cclaar-byte) and [CybearWarfare](https://github.com/CybearWarfare) for enhancing the UI.
 
-```
-install.bat
-```
+Special thanks to :
+- [cclaar-byte](https://github.com/cclaar-byte)
+- [CybearWarfare](https://github.com/CybearWarfare)
+- [Jan Brummelte](https://github.com/brummelte) 
 
-```
-./install.sh
-```
+for their contributions.
