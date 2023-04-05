@@ -98,6 +98,7 @@ chmod +x install.sh
 ```
 pip install nomic
 ```
+
 or force pip to install with Python 3.11
 
 ```
@@ -123,6 +124,9 @@ These scripts will create a Python virtual environment and install the required 
 ## Usage
 
 To run the Flask server, execute the following command:
+
+On Kali Linux it runned well but Ubuntu requires some upgrades:  
+ - python3.11 -m pip install numpy --upgrade
 
 ```bash
 python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
