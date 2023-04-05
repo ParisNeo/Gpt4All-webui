@@ -334,6 +334,7 @@ fetch('/discussions')
             if (response.ok) {
               response.text().then(data => {
                 const messages = JSON.parse(data);
+                console.log(messages)
                 // process messages
                 var container = document.getElementById('chat-window');
                 container.innerHTML = '';

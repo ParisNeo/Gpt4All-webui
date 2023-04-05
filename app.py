@@ -65,8 +65,10 @@ class Discussion:
 
     def get_messages(self):
         with sqlite3.connect(self.db_path) as conn:
-            conn.cursor().execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
-        return [{'sender': row[1], 'content': row[2]} for row in conn.cursor().fetchall()]
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
+            rows = cur.fetchall()
+        return [{'sender': row[1], 'content': row[2]} for row in rows]
 
     def remove_discussion(self):
         with sqlite3.connect(self.db_path) as conn:
@@ -178,19 +180,6 @@ class Gpt4AllWebUI():
 
         return Response(stream_with_context(generate()))
 
-    def new_discussion(self):        
-        tite = request.args.get('tite')
-        self.current_discussion= Discussion.create_discussion(db_path, tite)
-        # Get the current timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Insert a new discussion into the database
-        conn.cursor().execute("INSERT INTO discussions (created_at) VALUES (?)", (timestamp,))
-        conn.commit()
-
-        # Return a success response
-        return json.dumps({'id': self.current_discussion.discussion_id})
-
     def export(self):
         return jsonify(export_to_json(self.db_path))
 
@@ -284,10 +273,18 @@ class Gpt4AllWebUI():
     
 
     def new_discussion(self):
+        tite = request.args.get('tite')
+        self.current_discussion= Discussion.create_discussion(db_path, tite)
+        # Get the current timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # add a new discussion
         self.chatbot_bindings.close()
         self.chatbot_bindings.open()
-        print("chatbot reset successfully")
-        return "chatbot reset successfully"
+
+        # Return a success response
+        return json.dumps({'id': self.current_discussion.discussion_id})
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Start the chatbot Flask app.')
