@@ -226,6 +226,7 @@ newDiscussionBtn.addEventListener('click', () => {
     fetch(`/new_discussion?title=${discussionName}`)
     .then(response => response.json())
     .then(data => {
+        console.log(`New chat ${data}`)
         addMessage("GPT4ALL", welcome_message,0);
         // Select the new discussion
         //selectDiscussion(discussionId);
