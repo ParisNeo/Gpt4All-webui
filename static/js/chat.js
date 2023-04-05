@@ -51,13 +51,12 @@ chatForm.addEventListener('submit', event => {
                 text = textDecoder.decode(result.value);
 
                 // The server will first send a json containing information about the message just sent
-                console.log(text)
                 if(entry_counter==0)
                 {
                   // We parse it and
                   infos = JSON.parse(text)
-                  addUserMessage('User', infos.message, infos.id);
-                  elements = addUserMessage('GPT4ALL', '', infos.response_id);
+                  addMessage('User', infos.message, infos.id);
+                  elements = addMessage('GPT4ALL', '', infos.response_id, true);
                   messageTextElement=elements['messageTextElement'];
                   hiddenElement=elements['hiddenElement'];
                   entry_counter ++;
@@ -87,7 +86,7 @@ chatForm.addEventListener('submit', event => {
 });
 
 
-function addUserMessage(sender, message, id) {
+function addMessage(sender, message, id, can_edit=false) {
   const messageElement = document.createElement('div');
   messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
   messageElement.classList.add(sender);
@@ -100,41 +99,44 @@ function addUserMessage(sender, message, id) {
   const messageTextElement = document.createElement('div');
   messageTextElement.classList.add('font-medium', 'text-md');
   messageTextElement.innerHTML = message;
+  if(can_edit)
+  {
+    const editButton = document.createElement('button');
+    editButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'my-2');
+    editButton.innerHTML = 'Edit';
+    editButton.addEventListener('click', () => {
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.classList.add('font-medium', 'text-md', 'border', 'border-gray-300', 'p-1');
+        inputField.value = messageTextElement.innerHTML;
+  
+        const saveButton = document.createElement('button');
+        saveButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'my-2', 'ml-2');
+        saveButton.innerHTML = 'Save';
+        saveButton.addEventListener('click', () => {
+            const newText = inputField.value;
+            messageTextElement.innerHTML = newText;
+            // make request to update message
+            const url = `/update_message?id=${id}&message=${newText}`;
+            fetch(url)
+              .then(response => {
+                  if (!response.ok) {
+                      throw new Error('Network response was not ok');
+                  }
+              })
+              .catch(error => {
+                  console.error('There was a problem updating the message:', error);
+              });
+            messageElement.removeChild(inputField);
+            messageElement.removeChild(saveButton);
+        });
+  
+        messageElement.replaceChild(inputField, messageTextElement);
+        messageElement.appendChild(saveButton);
+        inputField.focus();
+    });
+  }
 
-  const editButton = document.createElement('button');
-  editButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'my-2');
-  editButton.innerHTML = 'Edit';
-  editButton.addEventListener('click', () => {
-      const inputField = document.createElement('input');
-      inputField.type = 'text';
-      inputField.classList.add('font-medium', 'text-md', 'border', 'border-gray-300', 'p-1');
-      inputField.value = messageTextElement.innerHTML;
-
-      const saveButton = document.createElement('button');
-      saveButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'my-2', 'ml-2');
-      saveButton.innerHTML = 'Save';
-      saveButton.addEventListener('click', () => {
-          const newText = inputField.value;
-          messageTextElement.innerHTML = newText;
-          // make request to update message
-          const url = `/update_message?id=${id}&message=${newText}`;
-          fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-            })
-            .catch(error => {
-                console.error('There was a problem updating the message:', error);
-            });
-          messageElement.removeChild(inputField);
-          messageElement.removeChild(saveButton);
-      });
-
-      messageElement.replaceChild(inputField, messageTextElement);
-      messageElement.appendChild(saveButton);
-      inputField.focus();
-  });
 
 
   // Create a hidden div element needed to buffer responses before commiting them to the visible message
@@ -144,7 +146,9 @@ function addUserMessage(sender, message, id) {
 
   messageElement.appendChild(senderElement);
   messageElement.appendChild(messageTextElement);
-  messageElement.appendChild(editButton);
+  if(can_edit){
+    messageElement.appendChild(editButton);
+  }
   chatWindow.appendChild(messageElement);
   chatWindow.appendChild(hiddenElement);
 
@@ -156,35 +160,6 @@ function addUserMessage(sender, message, id) {
 }
 
 
-
-
-function addBotMessage(sender, message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2');
-    messageElement.classList.add(sender);
-    const senderElement = document.createElement('div');
-    senderElement.classList.add('font-normal', 'underline', 'text-sm');
-    senderElement.innerHTML = sender;
-    
-    const messageTextElement = document.createElement('div');
-    messageTextElement.classList.add('font-medium', 'text-md');
-    messageTextElement.innerHTML = message
-
-    // Create a hidden div element
-    const hiddenElement = document.createElement('div');
-    hiddenElement.style.display = 'none';
-    hiddenElement.innerHTML = '';    
-    
-    messageElement.appendChild(senderElement);
-    messageElement.appendChild(messageTextElement);
-    chatWindow.appendChild(messageElement);
-    chatWindow.appendChild(hiddenElement);
-    
-    // scroll to bottom of chat window
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-
-    return {'messageTextElement':messageTextElement, 'hiddenElement':hiddenElement}
-}
 
 const exportButton = document.getElementById('export-button');
 
@@ -246,23 +221,23 @@ newDiscussionBtn.addEventListener('click', () => {
   const discussionName = prompt('Enter a name for the new discussion:');
   if (discussionName) {
     // Add the discussion to the discussion list
-    const discussionList = document.querySelector('#discussion-list');
     const discussionItem = document.createElement('li');
     discussionItem.textContent = discussionName;
-    fetch(`/new_discussion?tite=${discussionName}`)
+    fetch(`/new_discussion?title=${discussionName}`)
     .then(response => response.json())
     .then(data => {
-        addBotMessage("GPT4ALL",welcome_message);
+        addMessage("GPT4ALL", welcome_message,0);
+        // Select the new discussion
+        //selectDiscussion(discussionId);
+        chatWindow.innerHTML=""
+        populate_discussions_list()
     })
     .catch(error => {
       // Handle any errors that occur
       console.error(error);
     });
     
-    // Select the new discussion
-    //selectDiscussion(discussionId);
-    chatWindow.innerHTML=""
-    populate_discussions_list()
+
   }
 });
 
@@ -276,10 +251,11 @@ function populate_discussions_list()
     .then(discussions => {
       discussions.forEach(discussion => {
         const buttonWrapper = document.createElement('div');
-        buttonWrapper.classList.add('flex', 'space-x-2', 'mt-2');
-
+        //buttonWrapper.classList.add('flex', 'space-x-2', 'mt-2');
+        buttonWrapper.classList.add('flex', 'items-center', 'mt-2', 'py-4', 'text-left');
+        
         const renameButton = document.createElement('button');
-        renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
+        renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded', 'mr-2');
         const renameImg = document.createElement('img');
         renameImg.src = "/static/images/edit_discussion.png";
         renameImg.style.width='20px'
@@ -344,7 +320,7 @@ function populate_discussions_list()
           dialog.showModal();
         });
         const deleteButton = document.createElement('button');
-        deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
+        deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded', 'ml-2');
         const deleteImg = document.createElement('img');
         deleteImg.src = "/static/images/delete_discussion.png";
         deleteImg.style.width='20px'
@@ -378,7 +354,7 @@ function populate_discussions_list()
         });
 
         const discussionButton = document.createElement('button');
-        discussionButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded');
+        discussionButton.classList.add('flex-grow', 'w-full', 'bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'text-left', 'hover:text-white');
         discussionButton.textContent = discussion.title;
         discussionButton.addEventListener('click', () => {
           // send query with discussion id to reveal discussion messages
@@ -398,7 +374,7 @@ function populate_discussions_list()
                   var container = document.getElementById('chat-window');
                   container.innerHTML = '';
                   messages.forEach(message => {
-                    addUserMessage(message.sender, message.content, message.id);
+                    addMessage(message.sender, message.content, message.id, true);
                   });
                     });
               } else {
@@ -545,7 +521,7 @@ const welcome_message = `
 `;
 //welcome_message = add_collapsible_div("Note:", text, 'hints');
 
-addBotMessage("GPT4ALL",welcome_message);
+addMessage("GPT4ALL",welcome_message,0);
 
 // Code for collapsable text
 const collapsibles = document.querySelectorAll('.collapsible');

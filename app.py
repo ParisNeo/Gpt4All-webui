@@ -295,15 +295,15 @@ class Gpt4AllWebUI():
             id = request.args.get('id')
             new_message = request.args.get('message')
             self.current_discussion.update_message(id, new_message)
-            return
+            return jsonify({"status":'ok'})
         except Exception as ex:
             print(ex)
             msg = traceback.print_exc()
             return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
 
     def new_discussion(self):
-        tite = request.args.get('tite')
-        self.current_discussion= Discussion.create_discussion(self.db_path, tite)
+        title = request.args.get('title')
+        self.current_discussion= Discussion.create_discussion(self.db_path, title)
         # Get the current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
