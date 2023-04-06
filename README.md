@@ -60,14 +60,14 @@ On Windows with WSL:
 
 - When Nomic add windows support you would be able to use this :
 
-  ```
+```
   install.bat
-  ```
+```
 - On linux/ Mac os
 
-  ```
+```
 ./install.sh
-  ```
+```
 
 On Linux/MacOS, if you have issues, refer more details are presented [here](docs/Linux_Osx_Install.md)
 
