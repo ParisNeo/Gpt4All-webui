@@ -1,5 +1,7 @@
 # Gpt4All Web UI
 
+# THIS APP WAS MOVED TO NOMIC-AI REPO [GPT4ALL-UI](https://github.com/nomic-ai/gpt4all-ui) Please check it out there for more up todate version.
+
 ![GitHub license](https://img.shields.io/github/license/nomic-ai/GPT4All-ui)
 ![GitHub issues](https://img.shields.io/github/issues/nomic-ai/GPT4All-ui)
 ![GitHub stars](https://img.shields.io/github/stars/nomic-ai/GPT4All-ui)
@@ -12,7 +14,7 @@ This is a Flask web application that provides a chat UI for interacting with the
 
 
 
-THIS APP WAS MOVED TO NOMIC-AI REPO [GPT4ALL-UI](https://github.com/nomic-ai/gpt4all-ui) Please check it out there for more up todate version.
+
 
 
 
