@@ -68,10 +68,11 @@ On Windows with WSL:
 ```
 ./install.sh
 ```
-
-On Linux/MacOS, if you have issues, refer more details are presented [here](docs/Linux_Osx_Install.md)
-
 These scripts will create a Python virtual environment and install the required dependencies.
+
+
+On Linux/MacOS, if you have issues, more details can be found [here](docs/Linux_Osx_Install.md)
+
 
 ## Usage
 
