@@ -44,6 +44,7 @@ cd GPT4All-ui
 On Windows :
 ```
 install.bat
+
 ```
 - On linux/ Mac os
 
@@ -55,6 +56,7 @@ On Linux/MacOS, if you have issues, refer more details are presented [here](docs
 These scripts will create a Python virtual environment and install the required dependencies. It will also download the models and install them.
 
 Now you're ready to work!
+
 ## Usage
 For simple newbies on Windows:
 ```cmd
