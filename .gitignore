@@ -136,7 +136,11 @@ dmypy.json
 
 # models
 models/
+!models/.keep
 !models/README.md
 
 # Temporary files
 tmp/
+
+# 
+llama.cpp

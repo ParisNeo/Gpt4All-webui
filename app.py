@@ -1,206 +1,190 @@
-from flask import Flask, jsonify, request, render_template, Response, stream_with_context
-from pyllamacpp.model import Model
+######
+# Project       : GPT4ALL-UI
+# Author        : ParisNeo with the help of the community
+# Supported by Nomic-AI
+# Licence       : Apache 2.0
+# Description   : 
+# A front end Flask application for llamacpp models.
+# The official GPT4All Web ui
+# Made by the community for the community
+######
+
 import argparse
-import threading
-from io import StringIO
-import sys
-import re
-import sqlite3
-from datetime import datetime
-
-import sqlite3
 import json
-import time 
+import re
 import traceback
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
+import sys
+from db import DiscussionsDB, Discussion
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    stream_with_context,
+    send_from_directory
+)
+from pyllamacpp.model import Model
+from queue import Queue
+from pathlib import Path
+import gc
+app = Flask("GPT4All-WebUI", static_url_path="/static", static_folder="static")
+import time
+from config import load_config
 
-import select
+class Gpt4AllWebUI:
 
-#=================================== Database ==================================================================
-class Discussion:
-    def __init__(self, discussion_id, db_path='database.db'):
-        self.discussion_id = discussion_id
-        self.db_path = db_path
-
-    @staticmethod
-    def create_discussion(db_path='database.db', title='untitled'):
-        with sqlite3.connect(db_path) as conn:
-            cur = conn.cursor()
-            cur.execute("INSERT INTO discussion (title) VALUES (?)", (title,))
-            discussion_id = cur.lastrowid
-            conn.commit()
-        return Discussion(discussion_id, db_path)
-    
-    @staticmethod
-    def get_discussion(db_path='database.db', id=0):
-        return Discussion(id, db_path)
-
-    def add_message(self, sender, content):
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
-            cur.execute('INSERT INTO message (sender, content, discussion_id) VALUES (?, ?, ?)',
-                         (sender, content, self.discussion_id))
-            message_id = cur.lastrowid
-            conn.commit()
-        return message_id
-    @staticmethod
-    def get_discussions(db_path):
-        with sqlite3.connect(db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM discussion')
-            rows = cursor.fetchall()
-        return [{'id': row[0], 'title': row[1]} for row in rows]
-
-    @staticmethod
-    def rename(db_path, discussion_id, title):
-        with sqlite3.connect(db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute('UPDATE discussion SET title=? WHERE id=?', (title, discussion_id))
-            conn.commit()
-
-    def delete_discussion(self):
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
-            cur.execute('DELETE FROM message WHERE discussion_id=?', (self.discussion_id,))
-            cur.execute('DELETE FROM discussion WHERE id=?', (self.discussion_id,))
-            conn.commit()
-
-    def get_messages(self):
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
-            cur.execute('SELECT * FROM message WHERE discussion_id=?', (self.discussion_id,))
-            rows = cur.fetchall()
-        return [{'sender': row[1], 'content': row[2], 'id':row[0]} for row in rows]
-    
-
-
-    def update_message(self, message_id, new_content):
-        with sqlite3.connect(self.db_path) as conn:
-            cur = conn.cursor()
-            cur.execute('UPDATE message SET content = ? WHERE id = ?', (new_content, message_id))
-            conn.commit()
-
-    def remove_discussion(self):
-        with sqlite3.connect(self.db_path) as conn:
-            conn.cursor().execute('DELETE FROM discussion WHERE id=?', (self.discussion_id,))
-            conn.commit()
-
-def last_discussion_has_messages(db_path='database.db'):
-    with sqlite3.connect(db_path) as conn:
-        c = conn.cursor()
-        c.execute("SELECT * FROM message ORDER BY id DESC LIMIT 1")
-        last_message = c.fetchone()
-    return last_message is not None
-
-def export_to_json(db_path='database.db'):
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM discussion')
-        discussions = []
-        for row in cur.fetchall():
-            discussion_id = row[0]
-            discussion = {'id': discussion_id, 'messages': []}
-            cur.execute('SELECT * FROM message WHERE discussion_id=?', (discussion_id,))
-            for message_row in cur.fetchall():
-                discussion['messages'].append({'sender': message_row[1], 'content': message_row[2]})
-            discussions.append(discussion)
-        return discussions
-
-def remove_discussions(db_path='database.db'):
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute('DELETE FROM message')
-        cur.execute('DELETE FROM discussion')
-        conn.commit()
-
-# create database schema
-def check_discussion_db(db_path):
-    print("Checking discussions database...")
-    with sqlite3.connect(db_path) as conn:
-        cur = conn.cursor()
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS discussion (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT
-            )
-        ''')
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS message (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                sender TEXT NOT NULL,
-                content TEXT NOT NULL,
-                discussion_id INTEGER NOT NULL,
-                FOREIGN KEY (discussion_id) REFERENCES discussion(id)
-            )
-        ''')
-        conn.commit()
-
-    print("Ok")
-
-# ========================================================================================================================
-
-
-
-app = Flask("GPT4All-WebUI", static_url_path='/static', static_folder='static')
-class Gpt4AllWebUI():
-    def __init__(self, chatbot_bindings, app, db_path='database.db') -> None:
+    def __init__(self, _app, config:dict) -> None:
+        self.config = config
         self.current_discussion = None
-        self.chatbot_bindings = chatbot_bindings
-        self.app=app
-        self.db_path= db_path
-        self.add_endpoint('/', '', self.index, methods=['GET'])
-        self.add_endpoint('/export', 'export', self.export, methods=['GET'])
-        self.add_endpoint('/new_discussion', 'new_discussion', self.new_discussion, methods=['GET'])
-        self.add_endpoint('/bot', 'bot', self.bot, methods=['POST'])
-        self.add_endpoint('/discussions', 'discussions', self.discussions, methods=['GET'])
-        self.add_endpoint('/rename', 'rename', self.rename, methods=['POST'])
-        self.add_endpoint('/get_messages', 'get_messages', self.get_messages, methods=['POST'])
-        self.add_endpoint('/delete_discussion', 'delete_discussion', self.delete_discussion, methods=['POST'])
+        self.app = _app
+        self.db_path = config["db_path"]
+        self.db = DiscussionsDB(self.db_path)
+        # If the database is empty, populate it with tables
+        self.db.populate()
 
-        self.add_endpoint('/update_message', 'update_message', self.update_message, methods=['GET'])
+        # workaround for non interactive mode
+        self.full_message = ""
+        self.full_message_list = []
+        self.prompt_message = ""
+        # This is the queue used to stream text to the ui as the bot spits out its response
+        self.text_queue = Queue(0)
+
+        self.add_endpoint(
+            "/list_models", "list_models", self.list_models, methods=["GET"]
+        )
+        self.add_endpoint(
+            "/list_discussions", "list_discussions", self.list_discussions, methods=["GET"]
+        )
         
-        conditionning_message="""
-Instruction: Act as GPT4All. A kind and helpful AI bot built to help users solve problems.
-Start by welcoming the user then stop sending text.
-GPT4All:"""
-        self.prepare_query(conditionning_message)
-        chatbot_bindings.generate(conditionning_message, n_predict=55, new_text_callback=self.new_text_callback, n_threads=8)
-        print(f"Bot said:{self.bot_says}")        
+        
+        self.add_endpoint("/", "", self.index, methods=["GET"])
+        self.add_endpoint("/export_discussion", "export_discussion", self.export_discussion, methods=["GET"])
+        self.add_endpoint("/export", "export", self.export, methods=["GET"])
+        self.add_endpoint(
+            "/new_discussion", "new_discussion", self.new_discussion, methods=["GET"]
+        )
+        self.add_endpoint("/bot", "bot", self.bot, methods=["POST"])
+        self.add_endpoint("/rename", "rename", self.rename, methods=["POST"])
+        self.add_endpoint(
+            "/load_discussion", "load_discussion", self.load_discussion, methods=["POST"]
+        )
+        self.add_endpoint(
+            "/delete_discussion",
+            "delete_discussion",
+            self.delete_discussion,
+            methods=["POST"],
+        )
+
+        self.add_endpoint(
+            "/update_message", "update_message", self.update_message, methods=["GET"]
+        )
+        self.add_endpoint(
+            "/message_rank_up", "message_rank_up", self.message_rank_up, methods=["GET"]
+        )
+        self.add_endpoint(
+            "/message_rank_down", "message_rank_down", self.message_rank_down, methods=["GET"]
+        )
+        
+        self.add_endpoint(
+            "/update_model_params", "update_model_params", self.update_model_params, methods=["POST"]
+        )
+
+        self.add_endpoint(
+            "/get_config", "get_config", self.get_config, methods=["GET"]
+        )
+
+        self.add_endpoint(
+            "/extensions", "extensions", self.extensions, methods=["GET"]
+        )
+
+        self.add_endpoint(
+            "/training", "training", self.training, methods=["GET"]
+        )
+
+        self.add_endpoint(
+            "/help", "help", self.help, methods=["GET"]
+        )
+
+        self.prepare_a_new_chatbot()
+
+    def list_models(self):
+        models_dir = Path('./models')  # replace with the actual path to the models folder
+        models = [f.name for f in models_dir.glob('*.bin')]
+        return jsonify(models)
+
+    def list_discussions(self):
+        discussions = self.db.get_discussions()
+        return jsonify(discussions)
+
+
+    def prepare_a_new_chatbot(self):
+        # Create chatbot
+        self.chatbot_bindings = self.create_chatbot()
         # Chatbot conditionning
-        # response = self.chatbot_bindings.prompt("This is a discussion between A user and an AI. AI responds to user questions in a helpful manner. AI is not allowed to lie or deceive. AI welcomes the user\n### Response:")
-        # print(response)
+        self.condition_chatbot()
+        
 
-    def prepare_query(self, message):
-        self.bot_says=''
-        self.full_text=''
-        self.is_bot_text_started=False
-        self.current_message = message
+    def create_chatbot(self):
+        return Model(
+            ggml_model=f"./models/{self.config['model']}", 
+            n_ctx=self.config['ctx_size'], 
+            seed=self.config['seed'],
+            )
 
+    def condition_chatbot(self, conditionning_message = """
+Instruction: Act as GPT4All. A kind and helpful AI bot built to help users solve problems.
+GPT4All:Welcome! I'm here to assist you with anything you need. What can I do for you today?"""
+                          ):
+        self.full_message += conditionning_message
+        if self.current_discussion is None:
+            if self.db.does_last_discussion_have_messages():
+                self.current_discussion = self.db.create_discussion()
+            else:
+                self.current_discussion = self.db.load_last_discussion()
+        
+        message_id = self.current_discussion.add_message(
+            "conditionner", conditionning_message, DiscussionsDB.MSG_TYPE_CONDITIONNING,0
+        )
+        
+        self.full_message_list.append(conditionning_message)
+
+
+    def prepare_query(self):
+        self.bot_says = ""
+        self.full_text = ""
+        self.is_bot_text_started = False
+        #self.current_message = message
 
     def new_text_callback(self, text: str):
         print(text, end="")
+        sys.stdout.flush()
         self.full_text += text
         if self.is_bot_text_started:
             self.bot_says += text
-        if self.current_message in self.full_text:
-            self.is_bot_text_started=True
+            self.full_message += text
+            self.text_queue.put(text)
+        #if self.current_message in self.full_text:
+        if len(self.prompt_message) <= len(self.full_text):
+            self.is_bot_text_started = True
 
-    def new_text_callback_with_yield(self, text: str):
-        """
-        To do , fix the problem with yield to be able to show interactive response as text comes
-        """
-        print(text, end="")
-        self.full_text += text
-        if self.is_bot_text_started:
-            self.bot_says += text
-        if self.current_message in self.full_text:
-            self.is_bot_text_started=True
-        yield text
-
-    def add_endpoint(self, endpoint=None, endpoint_name=None, handler=None, methods=['GET'], *args, **kwargs):
-        self.app.add_url_rule(endpoint, endpoint_name, handler, methods=methods, *args, **kwargs)
+    def add_endpoint(
+        self,
+        endpoint=None,
+        endpoint_name=None,
+        handler=None,
+        methods=["GET"],
+        *args,
+        **kwargs,
+    ):
+        self.app.add_url_rule(
+            endpoint, endpoint_name, handler, methods=methods, *args, **kwargs
+        )
 
     def index(self):
-        return render_template('chat.html')
+        return render_template("chat.html")
 
     def format_message(self, message):
         # Look for a code block within the message
@@ -216,139 +200,287 @@ GPT4All:"""
         return message
 
     def export(self):
-        return jsonify(export_to_json(self.db_path))
+        return jsonify(self.db.export_to_json())
+
+    def export_discussion(self):
+        return jsonify(self.full_message)
+    
+    def generate_message(self):
+        self.generating=True
+        self.text_queue=Queue()
+        gc.collect()
+
+        self.chatbot_bindings.generate(
+            self.prompt_message,#self.full_message,#self.current_message,
+            new_text_callback=self.new_text_callback,
+            n_predict=len(self.current_message)+self.config['n_predict'],
+            temp=self.config['temp'],
+            top_k=self.config['top_k'],
+            top_p=self.config['top_p'],
+            repeat_penalty=self.config['repeat_penalty'],
+            repeat_last_n = self.config['repeat_last_n'],
+            #seed=self.config['seed'],
+            n_threads=8
+        )
+        self.generating=False
 
     @stream_with_context
     def parse_to_prompt_stream(self, message, message_id):
-        bot_says = ''
-        self.stop=False
+        bot_says = ""
+        self.stop = False
 
         # send the message to the bot
         print(f"Received message : {message}")
         # First we need to send the new message ID to the client
-        response_id = self.current_discussion.add_message("GPT4All",'') # first the content is empty, but we'll fill it at the end
-        yield(json.dumps({'type':'input_message_infos','message':message, 'id':message_id, 'response_id':response_id}))
+        response_id = self.current_discussion.add_message(
+            "GPT4All", ""
+        )  # first the content is empty, but we'll fill it at the end
+        yield (
+            json.dumps(
+                {
+                    "type": "input_message_infos",
+                    "message": message,
+                    "id": message_id,
+                    "response_id": response_id,
+                }
+            )
+        )
 
-        self.current_message = "User: "+message+"\nGPT4All:"
-        self.prepare_query(self.current_message)
-        chatbot_bindings.generate(self.current_message, n_predict=55, new_text_callback=self.new_text_callback, n_threads=8)
+        self.current_message = "\nUser: " + message + "\nGPT4All: "
+        self.full_message += self.current_message
+        self.full_message_list.append(self.current_message)
+        
+        if len(self.full_message_list) > 5:
+            self.prompt_message = '\n'.join(self.full_message_list[-5:])
+        else:
+            self.prompt_message = self.full_message
+        self.prepare_query()
+        self.generating = True
+        app.config['executor'].submit(self.generate_message)
+        while self.generating or not self.text_queue.empty():
+            try:
+                value = self.text_queue.get(False)
+                yield value
+            except :
+                time.sleep(1)
 
-        self.current_discussion.update_message(response_id,self.bot_says)
-        yield self.bot_says
+
+
+        self.current_discussion.update_message(response_id, self.bot_says)
+        self.full_message_list.append(self.bot_says)
+        #yield self.bot_says# .encode('utf-8').decode('utf-8')
         # TODO : change this to use the yield version in order to send text word by word
 
         return "\n".join(bot_says)
-            
+
     def bot(self):
-        self.stop=True
-        with sqlite3.connect(self.db_path) as conn:
-            try:
-                if self.current_discussion is None or not last_discussion_has_messages(self.db_path):
-                    self.current_discussion=Discussion.create_discussion(self.db_path)
+        self.stop = True
 
-                message_id = self.current_discussion.add_message("user", request.json['message'])    
-                message = f"{request.json['message']}"
+        if self.current_discussion is None:
+            if self.db.does_last_discussion_have_messages():
+                self.current_discussion = self.db.create_discussion()
+            else:
+                self.current_discussion = self.db.load_last_discussion()
 
-                # Segmented (the user receives the output as it comes)
-                # We will first send a json entry that contains the message id and so on, then the text as it goes
-                return Response(stream_with_context(self.parse_to_prompt_stream(message, message_id)))
-            except Exception as ex:
-                print(ex)
-                msg = traceback.print_exc()
-                return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
-            
-    def discussions(self):
-        try:
-            discussions = Discussion.get_discussions(self.db_path)    
-            return jsonify(discussions)
-        except Exception as ex:
-            print(ex)
-            msg = traceback.print_exc()
-            return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+        message_id = self.current_discussion.add_message(
+            "user", request.json["message"]
+        )
+        message = f"{request.json['message']}"
+
+        # Segmented (the user receives the output as it comes)
+        # We will first send a json entry that contains the message id and so on, then the text as it goes
+        return Response(
+            stream_with_context(
+                self.parse_to_prompt_stream(message, message_id)
+            )
+        )
 
     def rename(self):
         data = request.get_json()
-        id = data['id']
-        title = data['title']
-        Discussion.rename(self.db_path, id, title)    
+        title = data["title"]
+        self.current_discussion.rename(title)
         return "renamed successfully"
 
-    def get_messages(self):
+    def restore_discussion(self, full_message):
+        self.prompt_message = full_message
+
+        if len(self.full_message_list)>5:
+            self.prompt_message = "\n".join(self.full_message_list[-5:])
+
+        self.chatbot_bindings.generate(
+            self.prompt_message,#full_message,
+            new_text_callback=self.new_text_callback,
+            n_predict=0,#len(full_message),
+            temp=self.config['temp'],
+            top_k=self.config['top_k'],
+            top_p=self.config['top_p'],
+            repeat_penalty= self.config['repeat_penalty'],
+            repeat_last_n = self.config['repeat_last_n'],
+            n_threads=8
+        )
+
+    def load_discussion(self):
         data = request.get_json()
-        id = data['id']
-        self.current_discussion = Discussion(id,self.db_path)
+        discussion_id = data["id"]
+        self.current_discussion = Discussion(discussion_id, self.db)
         messages = self.current_discussion.get_messages()
+        
+        self.full_message = ""
+        self.full_message_list = []
+        for message in messages:
+            self.full_message += message['sender'] + ": " + message['content'] + "\n"
+            self.full_message_list.append(message['sender'] + ": " + message['content'])
+        app.config['executor'].submit(self.restore_discussion, self.full_message)
+
         return jsonify(messages)
-    
 
     def delete_discussion(self):
         data = request.get_json()
-        id = data['id']
-        self.current_discussion = Discussion(id, self.db_path)
+        discussion_id = data["id"]
+        self.current_discussion = Discussion(discussion_id, self.db)
         self.current_discussion.delete_discussion()
         self.current_discussion = None
         return jsonify({})
-    
+
     def update_message(self):
-        try:
-            id = request.args.get('id')
-            new_message = request.args.get('message')
-            self.current_discussion.update_message(id, new_message)
-            return jsonify({"status":'ok'})
-        except Exception as ex:
-            print(ex)
-            msg = traceback.print_exc()
-            return "<b style='color:red;'>Exception :<b>"+str(ex)+"<br>"+traceback.format_exc()+"<br>Please report exception"
+        discussion_id = request.args.get("id")
+        new_message = request.args.get("message")
+        self.current_discussion.update_message(discussion_id, new_message)
+        return jsonify({"status": "ok"})
+
+    def message_rank_up(self):
+        discussion_id = request.args.get("id")
+        new_rank = self.current_discussion.message_rank_up(discussion_id)
+        return jsonify({"new_rank": new_rank})
+
+    def message_rank_down(self):
+        discussion_id = request.args.get("id")
+        new_rank = self.current_discussion.message_rank_down(discussion_id)
+        return jsonify({"new_rank": new_rank})
 
     def new_discussion(self):
-        title = request.args.get('title')
-        self.current_discussion= Discussion.create_discussion(self.db_path, title)
+        title = request.args.get("title")
+        self.current_discussion = self.db.create_discussion(title)
         # Get the current timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # add a new discussion
-        self.chatbot_bindings.close()
-        self.chatbot_bindings.open()
+        app.config['executor'].submit(self.prepare_a_new_chatbot)
+
+        self.full_message =""
 
         # Return a success response
-        return json.dumps({'id': self.current_discussion.discussion_id})
+        return json.dumps({"id": self.current_discussion.discussion_id, "time": timestamp})
 
+    def update_model_params(self):
+        data = request.get_json()
+        model =  str(data["model"])
+        if self.config['model'] != model:
+            print("New model selected")
+            self.config['model'] = model
+            self.prepare_a_new_chatbot()
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Start the chatbot Flask app.')
+        self.config['n_predict'] = int(data["nPredict"])
+        self.config['seed'] = int(data["seed"])
+        
+        self.config['temp'] = float(data["temp"])
+        self.config['top_k'] = int(data["topK"])
+        self.config['top_p'] = float(data["topP"])
+        self.config['repeat_penalty'] = float(data["repeatPenalty"])
+        self.config['repeat_last_n'] = int(data["repeatLastN"])
 
-    parser.add_argument('--temp', type=float, default=0.1, help='Temperature parameter for the model.')
-    parser.add_argument('--n_predict', type=int, default=128, help='Number of tokens to predict at each step.')
-    parser.add_argument('--top_k', type=int, default=40, help='Value for the top-k sampling.')
-    parser.add_argument('--top_p', type=float, default=0.95, help='Value for the top-p sampling.')
-    parser.add_argument('--repeat_penalty', type=float, default=1.3, help='Penalty for repeated tokens.')
-    parser.add_argument('--repeat_last_n', type=int, default=64, help='Number of previous tokens to consider for the repeat penalty.')
-    parser.add_argument('--ctx_size', type=int, default=2048, help='Size of the context window for the model.')
-    parser.add_argument('--debug', dest='debug', action='store_true', help='launch Flask server in debug mode')
-    parser.add_argument('--host', type=str, default='localhost', help='the hostname to listen on')
-    parser.add_argument('--port', type=int, default=9600, help='the port to listen on')
-    parser.add_argument('--db_path', type=str, default='database.db', help='Database path')
-    parser.set_defaults(debug=False)
-
-    args = parser.parse_args()
-
-    chatbot_bindings = Model(ggml_model='./models/gpt4all-converted.bin', n_ctx=512)
+        print("Parameters changed to:")
+        print(f"\tTemperature:{self.config['temp']}")
+        print(f"\tNPredict:{self.config['n_predict']}")
+        print(f"\tSeed:{self.config['seed']}")
+        print(f"\top_k:{self.config['top_k']}")
+        print(f"\top_p:{self.config['top_p']}")
+        print(f"\trepeat_penalty:{self.config['repeat_penalty']}")
+        print(f"\trepeat_last_n:{self.config['repeat_last_n']}")
+        return jsonify({"status":"ok"})
     
-    # Old Code
-    # GPT4All(decoder_config = {
-    #     'temp': args.temp,
-    #     'n_predict':args.n_predict,
-    #     'top_k':args.top_k,
-    #     'top_p':args.top_p,
-    #     #'color': True,#"## Instruction",
-    #     'repeat_penalty': args.repeat_penalty,
-    #     'repeat_last_n':args.repeat_last_n,
-    #     'ctx_size': args.ctx_size
-    # })
-    check_discussion_db(args.db_path)
-    bot = Gpt4AllWebUI(chatbot_bindings, app, args.db_path)
+    
+    def get_config(self):
+        return jsonify(self.config)
 
-    if args.debug:
-        app.run(debug=True, host=args.host, port=args.port)
+    def help(self):
+        return render_template("help.html")
+    
+    def training(self):
+        return render_template("training.html")
+
+    def extensions(self):
+        return render_template("extensions.html")
+
+    
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Start the chatbot Flask app.")
+    parser.add_argument(
+        "-s", "--seed", type=int, default=None, help="Force using a specific model."
+    )
+
+    parser.add_argument(
+        "-m", "--model", type=str, default=None, help="Force using a specific model."
+    )
+    parser.add_argument(
+        "--temp", type=float, default=None, help="Temperature parameter for the model."
+    )
+    parser.add_argument(
+        "--n_predict",
+        type=int,
+        default=None,
+        help="Number of tokens to predict at each step.",
+    )
+    parser.add_argument(
+        "--top_k", type=int, default=None, help="Value for the top-k sampling."
+    )
+    parser.add_argument(
+        "--top_p", type=float, default=None, help="Value for the top-p sampling."
+    )
+    parser.add_argument(
+        "--repeat_penalty", type=float, default=None, help="Penalty for repeated tokens."
+    )
+    parser.add_argument(
+        "--repeat_last_n",
+        type=int,
+        default=None,
+        help="Number of previous tokens to consider for the repeat penalty.",
+    )
+    parser.add_argument(
+        "--ctx_size",
+        type=int,
+        default=None,#2048,
+        help="Size of the context window for the model.",
+    )
+    parser.add_argument(
+        "--debug",
+        dest="debug",
+        action="store_true",
+        help="launch Flask server in debug mode",
+    )
+    parser.add_argument(
+        "--host", type=str, default="localhost", help="the hostname to listen on"
+    )
+    parser.add_argument("--port", type=int, default=None, help="the port to listen on")
+    parser.add_argument(
+        "--db_path", type=str, default=None, help="Database path"
+    )
+    parser.set_defaults(debug=False)
+    args = parser.parse_args()
+    config_file_path = "configs/default.yaml"
+    config = load_config(config_file_path)
+
+    # Override values in config with command-line arguments
+    for arg_name, arg_value in vars(args).items():
+        if arg_value is not None:
+            config[arg_name] = arg_value
+
+    executor = ThreadPoolExecutor(max_workers=2)
+    app.config['executor'] = executor
+
+    bot = Gpt4AllWebUI(app, config)
+
+    if config["debug"]:
+        app.run(debug=True, host=config["host"], port=config["port"])
     else:
-        app.run(host=args.host, port=args.port)
+        app.run(host=config["host"], port=config["port"])

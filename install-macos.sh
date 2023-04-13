@@ -45,26 +45,23 @@ else
   read -p "Python3.11 is not installed. Would you like to install Python3.11? [Y/N] " choice
   if [ "$choice" = "Y" ] || [ "$choice" = "y" ]; then
     echo "Installing Python3.11..."
-    sudo apt update
-    sudo apt install -y python3.11 python3.11-venv
+    brew install python@3.11
   else
     echo "Please install Python3.11 and try again."
     exit 1
   fi
 fi
 
-# check if cmake is installed, if not install it
+#check if cmake is installed, if not install it
 if [ "$(command -v cmake)" = "" ]; then
-    echo "cmake not found, installing cmake ..."
-    sudo apt-get install -y cmake # for Linux
-    brew install cmake # for macOS
+  echo "cmake not found, installing cmake ..."
+  brew install cmake
 fi
 
 # check if nproc is installed, if not install it
 if [ "$(command -v nproc)" = "" ]; then
-    echo "nproc not found, installing nproc ..."
-    sudo apt-get install -y coreutils # for Linux
-    brew install coreutils # for macOS
+  echo "nproc not found, installing nproc ..."
+  brew install coreutils
 fi
 
 # Install venv module
@@ -74,9 +71,9 @@ if python3.11 -m venv env > /dev/null 2>&1; then
 else
   read -p "venv module is not available. Would you like to install it? [Y/N] " choice
   if [ "$choice" = "Y" ] || [ "$choice" = "y" ]; then
-    echo "Installing venv module..."
-    sudo apt update
-    sudo apt install -y python3.11-venv
+     echo "Installing venv module..."
+     python3.11 -m ensurepip --upgrade
+     python3.11 -m pip install virtualenv
   else
     echo "Please install venv module and try again."
     exit 1
@@ -111,13 +108,12 @@ if [ $? -ne 0 ]; then
 fi
 
 echo Downloading latest model
-wget -P models/  https://the-eye.eu/public/AI/models/nomic-ai/gpt4all/gpt4all-lora-quantized-ggml.bin
+curl -o models/gpt4all-lora-quantized-ggml.bin https://the-eye.eu/public/AI/models/nomic-ai/gpt4all/gpt4all-lora-quantized-ggml.bin
 if [ $? -ne 0 ]; then
-  echo "Failed to download model. Please check your `wget` dependency, internet connection and try again."
+  echo "Failed to download model. Please check your internet connection and try again."
   exit 1
 fi
 
-
 echo "Virtual environment created and packages installed successfully."
-echo "Every thing is setup. Just run run.sh"
+echo "Everything is set up. Just run run.sh"
 exit 0
