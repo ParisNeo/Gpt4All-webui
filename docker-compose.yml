@@ -9,5 +9,7 @@ services:
       - ./data:/srv/data
       - ./data/.nomic:/root/.nomic/
       - ./models:/srv/models
+      - ./configs:/srv/configs
+      - ./personalities:/srv/personalities
     ports: 
       - "9600:9600"

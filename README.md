@@ -22,10 +22,17 @@ It's worth noting that the model has recently been launched, and it's expected t
 
 ## UI screenshot
 ### MAIN page
-![image](https://user-images.githubusercontent.com/827993/231307919-fda4d6e9-df17-4646-ba06-33afe6b6b176.png)
+![image](https://user-images.githubusercontent.com/827993/231809373-ae46f510-5dfe-4432-9fa4-e35328a6c461.png)
 ### Settings page
-![image](https://user-images.githubusercontent.com/827993/231309009-4d190850-4292-4de2-a303-ceb04f5cf0ed.png)
-
+![image](https://user-images.githubusercontent.com/827993/231809510-93b0156a-98dd-4f5b-9d19-25c787570dc1.png)
+### Extensions page
+The extensions interface is not yet ready but once it will be, any one may build its own plugins and share them with the community.
+![image](https://user-images.githubusercontent.com/827993/231809762-0dd8127e-0cab-4310-9df3-d1cff89cf589.png)
+### Training page
+This page is not yet ready, but it will eventually be released to allow you to fine tune your own model and share it if you want
+![image](https://user-images.githubusercontent.com/827993/231810125-b39c0672-f748-4311-9523-9b27b8a89dfe.png)
+### Help
+This page shows credits to the developers, How to use, few FAQ, and some examples to test.
 
 ## Installation
 
@@ -96,13 +103,15 @@ Now you are ready to customize your Bot.
 
 To run the Flask server, execute the following command:
 ```bash
-python app.py [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
+python app.py [--config CONFIG] [--personality PERSONALITY] [--port PORT] [--host HOST] [--temp TEMP] [--n-predict N_PREDICT] [--top-k TOP_K] [--top-p TOP_P] [--repeat-penalty REPEAT_PENALTY] [--repeat-last-n REPEAT_LAST_N] [--ctx-size CTX_SIZE]
 ```
 
 On Linux/MacOS more details are [here](docs/Linux_Osx_Usage.md)
 
 
 ## Options
+*   `--config`: the configuration file to be used. It contains default configurations to be used. The script parameters will override the configurations inside the configuration file. It must be placed in configs folder (default: default.yaml)
+*   `--personality`: the personality file name. It contains the definition of the pezrsonality of the chatbot. It should be placed in personalities folder. The default personality is `gpt4all_chatbot.yaml`
 *   `--model`: the name of the model to be used. The model should be placed in models folder (default: gpt4all-lora-quantized.bin)
 *   `--seed`: the random seed for reproductibility. If fixed, it is possible to reproduce the outputs exactly (default: random)
 *   `--port`: the port on which to run the server (default: 9600)
@@ -136,6 +145,29 @@ docker-compose -f docker-compose.yml up
 ```
 
 After that you can open the application in your browser on http://localhost:9600
+
+
+## Update To latest version
+
+On windows use:
+```bash
+update.bat
+```
+On linux or macos use:
+```bash
+bash update.sh
+```
+
+
+## Build custom personalities and share them
+
+To build a new personality, create a new file with the name of the personality inside the personalities folder. You can look at `gpt4all_chatbot.yaml` file as an example. Then you can fill the fields with the description, the conditionning etc of your personality. Then save the file.
+
+You can launch the application using the personality in two ways:
+- Either you want to change it permanently by putting the name of the personality inside your configuration file
+- Or just use the `--personality` or `-p` option to give the personality name to be used.
+
+If you deem your personality worthy of sharing, you can share the personality by adding it to the [GPT4all personalities](https://github.com/ParisNeo/GPT4All_Personalities) repository. Just fork the repo, add your file and do a pull request.
 
 ## Contribute
 

@@ -36,9 +36,11 @@ from config import load_config
 
 class Gpt4AllWebUI:
 
-    def __init__(self, _app, config:dict) -> None:
+    def __init__(self, _app, config:dict, personality:dict) -> None:
         self.config = config
+        self.personality = personality
         self.current_discussion = None
+        self.current_message_id = 0
         self.app = _app
         self.db_path = config["db_path"]
         self.db = DiscussionsDB(self.db_path)
@@ -56,6 +58,10 @@ class Gpt4AllWebUI:
             "/list_models", "list_models", self.list_models, methods=["GET"]
         )
         self.add_endpoint(
+            "/list_personalities", "list_personalities", self.list_personalities, methods=["GET"]
+        )
+
+        self.add_endpoint(
             "/list_discussions", "list_discussions", self.list_discussions, methods=["GET"]
         )
         
@@ -67,6 +73,7 @@ class Gpt4AllWebUI:
             "/new_discussion", "new_discussion", self.new_discussion, methods=["GET"]
         )
         self.add_endpoint("/bot", "bot", self.bot, methods=["POST"])
+        self.add_endpoint("/run_to", "run_to", self.run_to, methods=["POST"])
         self.add_endpoint("/rename", "rename", self.rename, methods=["POST"])
         self.add_endpoint(
             "/load_discussion", "load_discussion", self.load_discussion, methods=["POST"]
@@ -87,6 +94,10 @@ class Gpt4AllWebUI:
         self.add_endpoint(
             "/message_rank_down", "message_rank_down", self.message_rank_down, methods=["GET"]
         )
+        self.add_endpoint(
+            "/delete_message", "delete_message", self.delete_message, methods=["GET"]
+        )
+        
         
         self.add_endpoint(
             "/update_model_params", "update_model_params", self.update_model_params, methods=["POST"]
@@ -103,6 +114,13 @@ class Gpt4AllWebUI:
         self.add_endpoint(
             "/training", "training", self.training, methods=["GET"]
         )
+        self.add_endpoint(
+            "/main", "main", self.main, methods=["GET"]
+        )
+        
+        self.add_endpoint(
+            "/settings", "settings", self.settings, methods=["GET"]
+        )
 
         self.add_endpoint(
             "/help", "help", self.help, methods=["GET"]
@@ -114,6 +132,11 @@ class Gpt4AllWebUI:
         models_dir = Path('./models')  # replace with the actual path to the models folder
         models = [f.name for f in models_dir.glob('*.bin')]
         return jsonify(models)
+    
+    def list_personalities(self):
+        personalities_dir = Path('./personalities')  # replace with the actual path to the models folder
+        personalities = [f.name for f in personalities_dir.glob('*.yaml')]
+        return jsonify(personalities)
 
     def list_discussions(self):
         discussions = self.db.get_discussions()
@@ -123,8 +146,6 @@ class Gpt4AllWebUI:
     def prepare_a_new_chatbot(self):
         # Create chatbot
         self.chatbot_bindings = self.create_chatbot()
-        # Chatbot conditionning
-        self.condition_chatbot()
         
 
     def create_chatbot(self):
@@ -134,23 +155,28 @@ class Gpt4AllWebUI:
             seed=self.config['seed'],
             )
 
-    def condition_chatbot(self, conditionning_message = """
-Instruction: Act as GPT4All. A kind and helpful AI bot built to help users solve problems.
-GPT4All:Welcome! I'm here to assist you with anything you need. What can I do for you today?"""
-                          ):
-        self.full_message += conditionning_message
+    def condition_chatbot(self, conditionning_message):
         if self.current_discussion is None:
-            if self.db.does_last_discussion_have_messages():
-                self.current_discussion = self.db.create_discussion()
-            else:
-                self.current_discussion = self.db.load_last_discussion()
+            self.current_discussion = self.db.load_last_discussion()
         
         message_id = self.current_discussion.add_message(
-            "conditionner", conditionning_message, DiscussionsDB.MSG_TYPE_CONDITIONNING,0
+            "conditionner", 
+            conditionning_message, 
+            DiscussionsDB.MSG_TYPE_CONDITIONNING,
+            0,
+            self.current_message_id
         )
+        self.current_message_id = message_id
+        if self.personality["welcome_message"]!="":
+            message_id = self.current_discussion.add_message(
+                self.personality["name"], self.personality["welcome_message"], 
+                DiscussionsDB.MSG_TYPE_NORMAL,
+                0,
+                self.current_message_id
+            )
         
-        self.full_message_list.append(conditionning_message)
-
+            self.current_message_id = message_id
+        return message_id
 
     def prepare_query(self):
         self.bot_says = ""
@@ -166,8 +192,9 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
             self.bot_says += text
             self.full_message += text
             self.text_queue.put(text)
+            
         #if self.current_message in self.full_text:
-        if len(self.prompt_message) <= len(self.full_text):
+        if len(self.prompt_message) < len(self.full_text):
             self.is_bot_text_started = True
 
     def add_endpoint(
@@ -233,7 +260,7 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
         print(f"Received message : {message}")
         # First we need to send the new message ID to the client
         response_id = self.current_discussion.add_message(
-            "GPT4All", ""
+            self.personality["name"], ""
         )  # first the content is empty, but we'll fill it at the end
         yield (
             json.dumps(
@@ -246,12 +273,12 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
             )
         )
 
-        self.current_message = "\nUser: " + message + "\nGPT4All: "
+        self.current_message = self.personality["message_prefix"] + message + self.personality["message_suffix"]
         self.full_message += self.current_message
         self.full_message_list.append(self.current_message)
         
-        if len(self.full_message_list) > 5:
-            self.prompt_message = '\n'.join(self.full_message_list[-5:])
+        if len(self.full_message_list) > self.config["nb_messages_to_remember"]:
+            self.prompt_message = self.personality["personality_conditionning"]+ '\n'.join(self.full_message_list[-self.config["nb_messages_to_remember"]:])
         else:
             self.prompt_message = self.full_message
         self.prepare_query()
@@ -283,8 +310,28 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
                 self.current_discussion = self.db.load_last_discussion()
 
         message_id = self.current_discussion.add_message(
-            "user", request.json["message"]
+            "user", request.json["message"], parent=self.current_message_id
         )
+        message = f"{request.json['message']}"
+        self.current_message_id = message_id
+        # Segmented (the user receives the output as it comes)
+        # We will first send a json entry that contains the message id and so on, then the text as it goes
+        return Response(
+            stream_with_context(
+                self.parse_to_prompt_stream(message, message_id)
+            )
+        )
+    
+
+    def run_to(self):
+        data = request.get_json()
+        message_id = data["id"]
+
+        self.stop = True
+        message_id = self.current_discussion.add_message(
+            "user", request.json["message"], parent=message_id
+        )
+
         message = f"{request.json['message']}"
 
         # Segmented (the user receives the output as it comes)
@@ -321,15 +368,25 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
 
     def load_discussion(self):
         data = request.get_json()
-        discussion_id = data["id"]
-        self.current_discussion = Discussion(discussion_id, self.db)
+        if "id" in data:
+            discussion_id = data["id"]
+            self.current_discussion = Discussion(discussion_id, self.db)
+        else:
+            if self.current_discussion is not None:
+                discussion_id = self.current_discussion.discussion_id
+                self.current_discussion = Discussion(discussion_id, self.db)
+            else:
+                self.current_discussion = self.db.create_discussion()
+        
         messages = self.current_discussion.get_messages()
         
         self.full_message = ""
         self.full_message_list = []
         for message in messages:
-            self.full_message += message['sender'] + ": " + message['content'] + "\n"
-            self.full_message_list.append(message['sender'] + ": " + message['content'])
+            if message['sender']!="conditionner":
+                self.full_message += message['sender'] + ": " + message['content'] + "\n"
+                self.full_message_list.append(message['sender'] + ": " + message['content'])
+                self.current_message_id=message['id']
         app.config['executor'].submit(self.restore_discussion, self.full_message)
 
         return jsonify(messages)
@@ -358,6 +415,12 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
         new_rank = self.current_discussion.message_rank_down(discussion_id)
         return jsonify({"new_rank": new_rank})
 
+    def delete_message(self):
+        discussion_id = request.args.get("id")
+        new_rank = self.current_discussion.delete_message(discussion_id)
+        return jsonify({"new_rank": new_rank})
+
+
     def new_discussion(self):
         title = request.args.get("title")
         self.current_discussion = self.db.create_discussion(title)
@@ -368,8 +431,12 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
 
         self.full_message =""
 
+        # Chatbot conditionning
+        self.condition_chatbot(self.personality["personality_conditionning"])
+
+
         # Return a success response
-        return json.dumps({"id": self.current_discussion.discussion_id, "time": timestamp})
+        return json.dumps({"id": self.current_discussion.discussion_id, "time": timestamp, "welcome_message":self.personality["welcome_message"]})
 
     def update_model_params(self):
         data = request.get_json()
@@ -402,6 +469,12 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
     def get_config(self):
         return jsonify(self.config)
 
+    def main(self):
+        return render_template("main.html")
+    
+    def settings(self):
+        return render_template("settings.html")
+
     def help(self):
         return render_template("help.html")
     
@@ -416,7 +489,15 @@ GPT4All:Welcome! I'm here to assist you with anything you need. What can I do fo
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the chatbot Flask app.")
     parser.add_argument(
-        "-s", "--seed", type=int, default=None, help="Force using a specific model."
+        "-c", "--config", type=str, default="default", help="Sets the configuration file to be used."
+    )
+
+    parser.add_argument(
+        "-p", "--personality", type=str, default=None, help="Selects the personality to be using."
+    )
+
+    parser.add_argument(
+        "-s", "--seed", type=int, default=None, help="Force using a specific seed value."
     )
 
     parser.add_argument(
@@ -459,7 +540,7 @@ if __name__ == "__main__":
         help="launch Flask server in debug mode",
     )
     parser.add_argument(
-        "--host", type=str, default="localhost", help="the hostname to listen on"
+        "--host", type=str, default=None, help="the hostname to listen on"
     )
     parser.add_argument("--port", type=int, default=None, help="the port to listen on")
     parser.add_argument(
@@ -467,7 +548,8 @@ if __name__ == "__main__":
     )
     parser.set_defaults(debug=False)
     args = parser.parse_args()
-    config_file_path = "configs/default.yaml"
+
+    config_file_path = f"configs/{args.config}.yaml"
     config = load_config(config_file_path)
 
     # Override values in config with command-line arguments
@@ -475,10 +557,12 @@ if __name__ == "__main__":
         if arg_value is not None:
             config[arg_name] = arg_value
 
+    personality = load_config(f"personalities/{config['personality']}.yaml")
+
     executor = ThreadPoolExecutor(max_workers=2)
     app.config['executor'] = executor
 
-    bot = Gpt4AllWebUI(app, config)
+    bot = Gpt4AllWebUI(app, config, personality)
 
     if config["debug"]:
         app.run(debug=True, host=config["host"], port=config["port"])

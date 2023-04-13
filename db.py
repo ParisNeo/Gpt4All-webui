@@ -12,19 +12,26 @@ class DiscussionsDB:
         """
         create database schema
         """
+        db_version = 2
+
         print("Checking discussions database...")
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
-            # Check if the 'schema_version' table exists
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS schema_version (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    version INTEGER NOT NULL
-                )
-            """)
             discussion_table_exist=False
             message_table_exist=False
+            schema_table_exist=False
+
+            # Check if the 'schema_version' table exists
+            try:
+                cursor.execute("""
+                    CREATE TABLE schema_version (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        version INTEGER NOT NULL
+                    )
+                """)
+            except:
+                schema_table_exist = True
             try:
                 cursor.execute("""
                         CREATE TABLE discussion (
@@ -32,16 +39,17 @@ class DiscussionsDB:
                             title TEXT
                         )
                     """)
-            except:
+            except Exception:
                 discussion_table_exist=True        
             try:
                 cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS message (
+                        CREATE TABLE message (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             sender TEXT NOT NULL,
                             content TEXT NOT NULL,
                             type INT NOT NULL,
                             rank INT NOT NULL,
+                            parent INT,
                             discussion_id INTEGER NOT NULL,
                             FOREIGN KEY (discussion_id) REFERENCES discussion(id)
                         )
@@ -62,15 +70,27 @@ class DiscussionsDB:
 
             # Upgrade the schema to version 1
             if version < 1:
-                print("Upgrading schema to version 1...")
+                print(f"Upgrading schema to version {db_version}...")
                 # Add the 'created_at' column to the 'message' table
                 if message_table_exist:
-                    cursor.execute("ALTER TABLE message ADD COLUMN type INT DEFAULT 0")
-                    cursor.execute("ALTER TABLE message ADD COLUMN rank INT DEFAULT 0")
-                # Update the schema version
-                cursor.execute("INSERT INTO schema_version (id, version) VALUES (1, 1)")
-                version = 1
-        
+                    cursor.execute("ALTER TABLE message ADD COLUMN type INT DEFAULT 0") # Added in V1
+                    cursor.execute("ALTER TABLE message ADD COLUMN rank INT DEFAULT 0") # Added in V1
+                    cursor.execute("ALTER TABLE message ADD COLUMN parent INT DEFAULT 0") # Added in V2
+            # Upgrade the schema to version 1
+            elif version < 2:
+                print(f"Upgrading schema to version {db_version}...")
+                # Add the 'created_at' column to the 'message' table
+                if message_table_exist:
+                    try:
+                        cursor.execute("ALTER TABLE message ADD COLUMN parent INT DEFAULT 0") # Added in V2
+                    except :
+                        pass
+            # Update the schema version
+            if not schema_table_exist:
+                cursor.execute(f"INSERT INTO schema_version (id, version) VALUES (1, {db_version})")
+            else:
+                cursor.execute(f"UPDATE schema_version SET version=? WHERE id=?",(db_version,1))
+
             conn.commit()
 
     def select(self, query, params=None, fetch_all=True):
@@ -90,7 +110,7 @@ class DiscussionsDB:
                 return cursor.fetchone()
             
 
-    def delete(self, query):
+    def delete(self, query, params=None):
         """
         Execute the specified SQL delete query on the database,
         with optional parameters.
@@ -98,7 +118,10 @@ class DiscussionsDB:
         """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute(query)
+            if params is None:
+                cursor.execute(query)
+            else:
+                cursor.execute(query, params)
             conn.commit()
    
     def insert(self, query, params=None):
@@ -132,6 +155,7 @@ class DiscussionsDB:
             last_discussion_id = self.create_discussion()
         else:
             last_discussion_id=last_discussion_id[0]
+        self.current_message_id = self.select("SELECT id FROM message WHERE discussion_id=? ORDER BY id DESC LIMIT 1", (last_discussion_id,), fetch_all=False)
         return Discussion(last_discussion_id, self)
     
     def create_discussion(self, title="untitled"):
@@ -187,7 +211,7 @@ class Discussion:
         self.discussion_id = discussion_id
         self.discussions_db = discussions_db
 
-    def add_message(self, sender, content, message_type=0, rank=0):
+    def add_message(self, sender, content, message_type=0, rank=0, parent=0):
         """Adds a new message to the discussion
 
         Args:
@@ -198,8 +222,8 @@ class Discussion:
             int: The added message id
         """
         message_id = self.discussions_db.insert(
-            "INSERT INTO message (sender, content, type, rank, discussion_id) VALUES (?, ?, ?, ?, ?)", 
-            (sender, content, message_type, rank, self.discussion_id)
+            "INSERT INTO message (sender, content, type, rank, parent, discussion_id) VALUES (?, ?, ?, ?, ?, ?)", 
+            (sender, content, message_type, rank, parent, self.discussion_id)
         )
         return message_id
 
@@ -232,7 +256,8 @@ class Discussion:
         rows = self.discussions_db.select(
             f"SELECT * FROM message WHERE discussion_id={self.discussion_id}"
         )
-        return [{"id": row[0], "sender": row[1], "content": row[2], "type": row[3], "rank": row[4]} for row in rows]
+
+        return [{"id": row[0], "sender": row[1], "content": row[2], "type": row[3], "rank": row[4], "parent": row[5]} for row in rows]
 
     def update_message(self, message_id, new_content):
         """Updates the content of a message
@@ -276,5 +301,14 @@ class Discussion:
             f"UPDATE message SET rank = ? WHERE id = ?",(new_rank,message_id)
         )
         return new_rank
+    
+    def delete_message(self, message_id):
+        """Delete the message
+
+        Args:
+            message_id (int): The id of the message to be deleted
+        """
+        # Retrieve current rank value for message_id
+        self.discussions_db.delete("DELETE FROM message WHERE id=?", (message_id,))
 
 # ========================================================================================================================

@@ -1,4 +1,47 @@
 
+function load_discussion(discussion=0){
+  if(discussion)
+  {
+    console.log(discussion.id)
+    body = { id: discussion.id }
+  }
+  else{
+    body = {  }
+  }
+  // send query with discussion id to reveal discussion messages
+  fetch('/load_discussion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(response => {
+    if (response.ok) {
+      response.text().then(data => {
+        const messages = JSON.parse(data);
+        console.log(messages)
+        // process messages
+        var container = document.getElementById('chat-window');
+        container.innerHTML = '';
+        messages.forEach(message => {
+          console.log(`Adding message ${message.type}`)
+          if(message.type==0){
+            console.log("Showing message")
+            addMessage(message.sender, message.content, message.id, message.rank, true);
+          }
+        });
+          });
+    } else {
+      alert('Failed to query the discussion');
+    }
+  })
+  .catch(error => {
+    console.error('Failed to get messages:', error);
+    alert('Failed to get messages');
+  });
+}
+
 function populate_discussions_list()
 {
   // Populate discussions list
@@ -13,7 +56,7 @@ function populate_discussions_list()
         buttonWrapper.classList.add('flex', 'items-center', 'mt-2', 'px-2', 'py-1', 'text-left');
         
         const renameButton = document.createElement('button');
-        renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-2', 'rounded', 'ml-2', 'mr-2',"w-20","h-20");
+        renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded',"w-10","h-10");
         const renameImg = document.createElement('img');
         renameImg.src = "/static/images/edit_discussion.png";
         renameImg.classList.add('py-2', 'px-2', 'rounded', 'w-15', 'h-15');
@@ -77,7 +120,7 @@ function populate_discussions_list()
           dialog.showModal();
         });
         const deleteButton = document.createElement('button');
-        deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'rounded', 'ml-2', 'mr-2', "w-20", "h-20");
+        deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded',"w-10","h-10");
         const deleteImg = document.createElement('img');
         deleteImg.src = "/static/images/delete_discussion.png";
         deleteImg.classList.add('py-2', 'px-2', 'rounded', 'w-15', 'h-15');
@@ -110,40 +153,11 @@ function populate_discussions_list()
         });
 
         const discussionButton = document.createElement('button');
-        discussionButton.classList.add('bg-blue-500', 'hover:bg-blue-700', 'text-white', 'font-bold', 'rounded', 'ml-2', 'w-full', 'h-20');
+        discussionButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'ml-2', 'w-full');
         discussionButton.textContent = discussion.title;
         discussionButton.addEventListener('click', () => {
-          // send query with discussion id to reveal discussion messages
-          fetch('/load_discussion', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ id: discussion.id })
-            })
-            .then(response => {
-              if (response.ok) {
-                response.text().then(data => {
-                  const messages = JSON.parse(data);
-                  console.log(messages)
-                  // process messages
-                  var container = document.getElementById('chat-window');
-                  container.innerHTML = '';
-                  messages.forEach(message => {
-                    if(message.type==0){
-                      addMessage(message.sender, message.content, message.id, message.rank, true);
-                    }
-                  });
-                    });
-              } else {
-                alert('Failed to query the discussion');
-              }
-            })
-            .catch(error => {
-              console.error('Failed to get messages:', error);
-              alert('Failed to get messages');
-            });
           console.log(`Showing messages for discussion ${discussion.id}`);
+          load_discussion(discussion);
         });
 
 
@@ -159,8 +173,6 @@ function populate_discussions_list()
   });
 }
 
-// First time we populate the discussions list
-populate_discussions_list()
 
 // adding export discussion button
 const exportDiscussionButton = document.querySelector('#export-discussion-button');
@@ -188,8 +200,13 @@ const actionBtns = document.querySelector('#action-buttons');
 actionBtns.appendChild(exportDiscussionButton);
 
 const newDiscussionBtn = document.querySelector('#new-discussion-btn');
+const resetDBButton = document.querySelector('#reset-discussions-btn');
+resetDBButton.addEventListener('click', () => {
 
+});
 newDiscussionBtn.addEventListener('click', () => {
+  const chatWindow = document.getElementById('chat-window');
+
   const discussionName = prompt('Enter a name for the new discussion:');
   if (discussionName) {
     const sendbtn = document.querySelector("#submit-input")
@@ -203,11 +220,12 @@ newDiscussionBtn.addEventListener('click', () => {
     fetch(`/new_discussion?title=${discussionName}`)
     .then(response => response.json())
     .then(data => {
-        console.log(`New chat ${data}`)
+        console.log(`New chat ${data.welcome_message}`)
         // Select the new discussion
         //selectDiscussion(discussionId);
         chatWindow.innerHTML=""
-        addMessage("GPT4ALL", welcome_message,0);
+        addMessage("GPT4ALL", data.welcome_message,0);
+        
         populate_discussions_list()
         sendbtn.style.display="block";
         waitAnimation.style.display="none";
