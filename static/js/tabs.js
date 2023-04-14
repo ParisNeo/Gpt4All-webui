@@ -28,9 +28,13 @@ fetch('/main')
   document.getElementById('main').innerHTML = html;
   // First time we populate the discussions list
   populate_discussions_list()
+  populate_menu();
   load_discussion();
   update_main();
   db_export();
+  prepre_audio();
+  add_audio_in_ui();
+  populateVoicesList();
   
 })
 .catch(error => {
