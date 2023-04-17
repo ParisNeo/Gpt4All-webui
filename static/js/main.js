@@ -16,6 +16,11 @@ function update_main(){
       const waitAnimation = document.querySelector("#wait-animation")
       sendbtn.style.display="none";
       waitAnimation.style.display="block";
+      console.log("Sending message to bot")
+
+      let hiddenElement = undefined
+      let messageTextElement = undefined
+
       fetch('/bot', {
           method: 'POST',
           headers: {
@@ -31,6 +36,7 @@ function update_main(){
                           if (result.done) {
                               sendbtn.style.display="block";
                               waitAnimation.style.display="none";
+                              console.log(result)
                               controller.close();
                               return;
                           }
@@ -57,7 +63,6 @@ function update_main(){
                   {
                     // We parse it and
                     infos = JSON.parse(text)
-                    console.log(infos)
                     addMessage('User', infos.message, infos.id, 0, can_edit=true);
                     elements = addMessage(infos.sender, '', infos.response_id, 0, can_edit=true);
                     messageTextElement=elements['messageTextElement'];
@@ -65,19 +70,28 @@ function update_main(){
                     entry_counter ++;
                   }
                   else{
+                    entry_counter ++;   
+                    prefix = "FINAL:";
+                    if(text.startsWith(prefix)){
+                        text = text.substring(prefix.length);
+                        hiddenElement.innerHTML = text
+                        messageTextElement.innerHTML = text
+                    }
+                    else{
                     // For the other enrtries, these are just the text of the chatbot
                     for (const char of text) {
-                          txt = hiddenElement.innerHTML;
-                          if (char != '\f') {
-                            txt += char
-                            hiddenElement.innerHTML = txt
-                            messageTextElement.innerHTML = txt.replace(/\n/g, "<br>")
-                          }
-  
-                      // scroll to bottom of chat window
-                      chatWindow.scrollTop = chatWindow.scrollHeight;
+                        txt = hiddenElement.innerHTML;
+                        if (char != '\f') {
+                        txt += char
+                        hiddenElement.innerHTML = txt
+                        messageTextElement.innerHTML = txt
+                        }
+
+                    // scroll to bottom of chat window
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
                     }
-                    entry_counter ++;   
+
+                    }
                   }
   
                   readStream();

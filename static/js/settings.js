@@ -7,6 +7,7 @@ fetch('/settings')
   modelInput = document.getElementById('model');
   personalityInput = document.getElementById('personalities');
   languageInput = document.getElementById('language');
+  voiceInput = document.getElementById('voice');
   seedInput = document.getElementById('seed');
   tempInput = document.getElementById('temp');
   nPredictInput = document.getElementById('n-predict');
@@ -56,6 +57,7 @@ fetch('/settings')
       modelInput.value = data["model"]
       personalityInput.value = data["personality"]
       languageInput.value = data["language"]
+      voiceInput.value = data["voice"]
       seedInput.value = data["seed"]
       tempInput.value = data["temp"]
       nPredictInput.value = data["n_predict"]
@@ -86,8 +88,11 @@ fetch('/settings')
   
     // Get form values and put them in an object
     const formValues = {
-      model: modelInput.value,
       seed: seedInput.value,
+      model: modelInput.value,
+      personality: personalityInput.value,
+      language: languageInput.value,
+      voice: voiceInput.value,
       temp: tempInput.value,
       nPredict: nPredictInput.value,
       topK: topKInput.value,
@@ -107,9 +112,11 @@ fetch('/settings')
       .then((response) => response.json())
       .then((data) => {
         console.log(data);
+        alert("Configuration set successfully")
       })
       .catch((error) => {
         console.error('Error:', error);
+        alert("Error setting configuration")
       });
   });
 
@@ -130,7 +137,6 @@ function populate_models(){
     .then(data => {
       if (Array.isArray(data)) {
         // data is an array
-        const selectElement = document.getElementById('model');
         data.forEach(filename => {
           const optionElement = document.createElement('option');
           optionElement.value = filename;
@@ -197,6 +203,3 @@ function populate_models(){
   });
 
 }
-
-populate_models()
-

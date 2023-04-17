@@ -59,18 +59,19 @@ function populate_discussions_list()
         renameButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded',"w-10","h-10");
         const renameImg = document.createElement('img');
         renameImg.src = "/static/images/edit_discussion.png";
+        renameButton.title = "Rename discussion";
         renameImg.classList.add('py-2', 'px-2', 'rounded', 'w-15', 'h-15');
         renameButton.appendChild(renameImg);
 
         //renameButton.style.backgroundImage = "/rename_discussion.svg"; //.textContent = 'Rename';
         renameButton.addEventListener('click', () => {
           const dialog = document.createElement('dialog');
-          dialog.classList.add('bg-white', 'rounded', 'p-4');
+          dialog.classList.add('bg-gray-500', 'text-white', 'rounded', 'p-4');
 
           const inputLabel = document.createElement('label');
           inputLabel.textContent = 'New name: ';
           const inputField = document.createElement('input');
-          inputField.classList.add('border', 'border-gray-400', 'rounded', 'py-1', 'px-2');
+          inputField.classList.add('border', "px-2", "mx-2", 'bg-gray-800', 'border-gray-400', 'rounded', 'py-1', 'px-2');
           inputField.setAttribute('type', 'text');
           inputField.setAttribute('name', 'title');
           inputField.setAttribute('value', discussion.title);
@@ -123,6 +124,7 @@ function populate_discussions_list()
         deleteButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded',"w-10","h-10");
         const deleteImg = document.createElement('img');
         deleteImg.src = "/static/images/delete_discussion.png";
+        deleteButton.title = "Delete discussion";
         deleteImg.classList.add('py-2', 'px-2', 'rounded', 'w-15', 'h-15');
 
         deleteButton.addEventListener('click', () => {
@@ -155,6 +157,7 @@ function populate_discussions_list()
         const discussionButton = document.createElement('button');
         discussionButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'ml-2', 'w-full');
         discussionButton.textContent = discussion.title;
+        discussionButton.title = "Open discussion";
         discussionButton.addEventListener('click', () => {
           console.log(`Showing messages for discussion ${discussion.id}`);
           load_discussion(discussion);
@@ -177,7 +180,7 @@ function populate_discussions_list()
 function populate_menu(){
   // adding export discussion button
   const exportDiscussionButton = document.querySelector('#export-discussion-button');
-
+  exportDiscussionButton.title = "Export discussion to a file";
   exportDiscussionButton.addEventListener('click', () => {
     fetch(`/export_discussion`)
     .then(response => response.text())
@@ -201,7 +204,9 @@ function populate_menu(){
   actionBtns.appendChild(exportDiscussionButton);
 
   const newDiscussionBtn = document.querySelector('#new-discussion-btn');
+  newDiscussionBtn.title = "Create new discussion";
   const resetDBButton = document.querySelector('#reset-discussions-btn');
+  resetDBButton.title = "Reset all discussions/database";
   resetDBButton.addEventListener('click', () => {
 
   });

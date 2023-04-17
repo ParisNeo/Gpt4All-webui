@@ -59,12 +59,26 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo Downloading latest model
-wget -P models/  https://the-eye.eu/public/AI/models/nomic-ai/gpt4all/gpt4all-lora-quantized-ggml.bin
+echo ""
+echo "Downloading latest model..."
+curl -o "models/gpt4all-lora-quantized-ggml.bin" "https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin"
 if [ $? -ne 0 ]; then
-  echo "Failed to download model. Please check your `wget` dependency, internet connection and try again."
-  exit 1
+    echo "Failed to download model. Please check your internet connection."
+    read -p "Do you want to try downloading again? Press Y to download." yn
+    case $yn in
+        [Yy]* ) echo "Downloading latest model..."
+                curl -o "models/gpt4all-lora-quantized-ggml.bin" "https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin";;
+        * ) echo "Skipping download of model file...";;
+    esac
+else
+    echo "Model successfully downloaded."
 fi
 
+echo ""
+echo "Cleaning tmp folder"
+rm -rf "./tmp"
+
+
 echo "Virtual environment created and packages installed successfully."
+echo "Every thing is setup. Just run run.sh"
 exit 0
