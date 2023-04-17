@@ -1,15 +1,26 @@
 // Dirty fix for disabling speech synth for firefox browsers :()
 const userAgent = navigator.userAgent;
 
+async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      console.log('Text copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+}
+
 function addMessage(sender, message, id, rank = 0, can_edit = false) {
     const chatWindow = document.getElementById('chat-window');
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
 
     console.log(id)
+    
     const messageElement = document.createElement('div');
     messageElement.classList.add('bg-secondary', 'drop-shadow-sm', 'p-4', 'mx-6', 'my-4', 'flex', 'flex-col', 'space-x-2', 'rounded-lg', 'shadow-lg', 'bg-gray-800', 'hover:bg-gray-700', 'transition-colors', 'duration-300');
 
+    messageElement.id = id
     //messageElement.classList.add(sender);
     messageElement.setAttribute('id', id);
 
@@ -19,7 +30,7 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
 
     const messageTextElement = document.createElement('div');
     messageTextElement.classList.add('font-medium', 'text-md');
-    messageTextElement.innerText = message;
+    messageTextElement.innerHTML = message;
     // Create a hidden div element needed to buffer responses before commiting them to the visible message
     const hiddenElement = document.createElement('div');
     hiddenElement.style.display = 'none';
@@ -27,6 +38,7 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
 
     messageElement.appendChild(senderElement);
     messageElement.appendChild(messageTextElement);
+
     if (can_edit) {
         // Create buttons container
         const buttonsContainer = document.createElement('div');
@@ -39,7 +51,19 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
         // Set the width and height of the container to 100%
         buttonsContainer.style.width = '100%';
         buttonsContainer.style.height = '100%';
-
+        const clipboardButton = document.createElement('button');
+        clipboardButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded', "w-10", "h-10");
+        clipboardButton.style.float = 'right'; // set the float property to right    
+        clipboardButton.style.display = 'inline-block'
+        clipboardButton.innerHTML = '';
+        const clipboardImg = document.createElement('img');
+        clipboardImg.src = "/static/images/copy.png";
+        clipboardImg.classList.add('py-1', 'px-1', 'rounded', 'w-10', 'h-10');
+        clipboardButton.title = "clipboard message";
+        clipboardButton.appendChild(clipboardImg)
+        clipboardButton.addEventListener('click', () => {
+            copyToClipboard(messageTextElement.innerText)
+        })
         const resendButton = document.createElement('button');
         resendButton.classList.add('bg-green-500', 'hover:bg-green-700', 'text-white', 'font-bold', 'py-0', 'px-0', 'rounded', "w-10", "h-10");
         resendButton.style.float = 'right'; // set the float property to right    
@@ -65,13 +89,15 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
             let messageTextElement_ = undefined
             let hiddenElement_ = undefined
 
+            elements = addMessage("", "", 0, 0, can_edit = true);
+
             fetch("/run_to", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    id: id,
+                    id: messageElement.id,
                     message: message
                 })
             })
@@ -113,25 +139,34 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
                             if (entry_counter == 0) {
                                 // We parse it and
                                 infos = JSON.parse(text)
-                                elements = addMessage(infos.sender, '', infos.response_id, 0, can_edit = true);
+                                elements.setID(infos.response_id)
+                                elements.setSender(infos.bot)
                                 messageTextElement_ = elements['messageTextElement'];
                                 hiddenElement_ = elements['hiddenElement'];
                                 entry_counter++;
                             }
                             else {
-                                // For the other enrtries, these are just the text of the chatbot
-                                for (const char of text) {
-                                    txt = hiddenElement_.innerHTML;
-                                    if (char != '\f') {
-                                        txt += char
-                                        hiddenElement_.innerHTML = txt
-                                        messageTextElement_.innerHTML = txt
-                                    }
-
-                                    // scroll to bottom of chat window
-                                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                                }
                                 entry_counter++;
+                                prefix = "FINAL:";
+                                if(text.startsWith(prefix)){
+                                    text = text.substring(prefix.length);
+                                    hiddenElement.innerHTML         = text
+                                    messageTextElement.innerHTML    = text
+                                }
+                                else{
+                                    // For the other enrtries, these are just the text of the chatbot
+                                    for (const char of text) {
+                                        txt = hiddenElement_.innerHTML;
+                                        if (char != '\f') {
+                                            txt += char
+                                            hiddenElement_.innerHTML = txt
+                                            messageTextElement_.innerHTML = txt
+                                        }
+
+                                        // scroll to bottom of chat window
+                                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                                    }
+                                }
                             }
 
                             readStream();
@@ -305,7 +340,9 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
                     console.error('There was a problem updating the message:', error);
                 });
         });
+        
         buttonsContainer.appendChild(editButton);
+        buttonsContainer.appendChild(clipboardButton);
         buttonsContainer.appendChild(resendButton);
         buttonsContainer.appendChild(deleteButton);
 
@@ -335,7 +372,10 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
             thumbUpBadge.display = `none`
             thumbDownBadge.display = 'none'
         }
-
+        chatWindow.buttonsContainer = buttonsContainer
+    }
+    else{
+        chatWindow.buttonsContainer = undefined
     }
     chatWindow.appendChild(messageElement);
     chatWindow.appendChild(hiddenElement);
@@ -344,9 +384,22 @@ function addMessage(sender, message, id, rank = 0, can_edit = false) {
     // scroll to bottom of chat window
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    // Return all needed stuff
-    return {
-        'messageTextElement': messageTextElement,
-        'hiddenElement': hiddenElement
+    messageElement.messageTextElement   = messageTextElement
+    messageElement.hiddenElement        = hiddenElement
+    messageElement.senderElement        = senderElement
+    messageElement.messageTextElement   = messageTextElement
+    messageElement.id                   = id
+
+    messageElement.setID=(id)=>{
+        messageElement.id = id
     }
+    messageElement.setSender=(sender)=>{
+        messageElement.senderElement.innerHTML = sender
+    }
+    messageElement.setMessage=(message)=>{
+        messageElement.messageTextElement.innerHTML = message
+    }
+    // Return all needed stuff
+    return messageElement
+    
 }

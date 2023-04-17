@@ -178,7 +178,7 @@ class Gpt4AllWebUI(GPT4AllAPI):
         return jsonify(self.db.export_to_json())
 
     def export_discussion(self):
-        return jsonify(self.full_message)
+        return jsonify({"discussion_text":self.get_discussion_to()})
     
 
     @stream_with_context
@@ -196,8 +196,9 @@ class Gpt4AllWebUI(GPT4AllAPI):
             json.dumps(
                 {
                     "type": "input_message_infos",
-                    "sender": self.personality["name"],
-                    "message": message,
+                    "bot": self.personality["name"],
+                    "user": self.personality["user_name"],
+                    "message":markdown.markdown(message),
                     "id": message_id,
                     "response_id": response_id,
                 }
@@ -251,7 +252,7 @@ class Gpt4AllWebUI(GPT4AllAPI):
 
     def run_to(self):
         data = request.get_json()
-        message_id = data["id"]
+        message_id = int(data["id"])
         self.stop = True
         # Segmented (the user receives the output as it comes)
         # We will first send a json entry that contains the message id and so on, then the text as it goes
@@ -278,8 +279,9 @@ class Gpt4AllWebUI(GPT4AllAPI):
                 self.current_discussion = Discussion(discussion_id, self.db)
             else:
                 self.current_discussion = self.db.create_discussion()
-        
         messages = self.current_discussion.get_messages()
+        for message in messages:
+            message["content"] = markdown.markdown(message["content"])
         
         return jsonify(messages)
 

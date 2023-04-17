@@ -21,6 +21,9 @@ function update_main(){
       let hiddenElement = undefined
       let messageTextElement = undefined
 
+      user_msg = addMessage('',message, 0, 0, can_edit=true);
+      bot_msg = addMessage('', '', 0, 0, can_edit=true);
+
       fetch('/bot', {
           method: 'POST',
           headers: {
@@ -62,11 +65,16 @@ function update_main(){
                   if(entry_counter==0)
                   {
                     // We parse it and
-                    infos = JSON.parse(text)
-                    addMessage('User', infos.message, infos.id, 0, can_edit=true);
-                    elements = addMessage(infos.sender, '', infos.response_id, 0, can_edit=true);
-                    messageTextElement=elements['messageTextElement'];
-                    hiddenElement=elements['hiddenElement'];
+                    infos = JSON.parse(text);
+
+                    user_msg.setSender(infos.user);
+                    user_msg.setMessage(infos.message);
+                    user_msg.setID(infos.id);
+                    bot_msg.setSender(infos.bot);
+                    bot_msg.setID(infos.response_id);
+
+                    messageTextElement  = bot_msg.messageTextElement;
+                    hiddenElement       = bot_msg.hiddenElement;
                     entry_counter ++;
                   }
                   else{
@@ -74,17 +82,17 @@ function update_main(){
                     prefix = "FINAL:";
                     if(text.startsWith(prefix)){
                         text = text.substring(prefix.length);
-                        hiddenElement.innerHTML = text
-                        messageTextElement.innerHTML = text
+                        hiddenElement.innerHTML         = text
+                        messageTextElement.innerHTML    = text
                     }
                     else{
                     // For the other enrtries, these are just the text of the chatbot
                     for (const char of text) {
                         txt = hiddenElement.innerHTML;
                         if (char != '\f') {
-                        txt += char
-                        hiddenElement.innerHTML = txt
-                        messageTextElement.innerHTML = txt
+                            txt += char
+                            hiddenElement.innerHTML         = txt;
+                            messageTextElement.innerHTML    = txt;
                         }
 
                     // scroll to bottom of chat window
