@@ -200,6 +200,12 @@ exit /b 1
 
 :VENV_SKIP
 
+echo Checking virtual environment.
+if exist ./env (
+    echo Virtual environment already exists.
+    goto VENV_CREATED
+)
+
 REM Create a new virtual environment
 set /p="Creating virtual environment ..." <nul
 python -m venv env >nul 2>&1
@@ -210,8 +216,8 @@ if %ERRORLEVEL% EQU 0 (
     pause
     exit /b 1
 )
-
 :VENV_CREATED
+
 
 REM Activate the virtual environment
 set /p="Activating virtual environment ..." <nul
@@ -227,35 +233,32 @@ if %ERRORLEVEL% neq 0 (
     exit /b 1
 )
 
-echo Downloading latest model
+echo Checking models...
 if not exist \models (
     md \models
 )
 
-if not exist \models/gpt4all-lora-quantized-ggml.bin (
+if not exist ./models/llama_cpp/gpt4all-lora-quantized-ggml.bin (
     echo.
     choice /C YNB /M "The default model file (gpt4all-lora-quantized-ggml.bin) does not exist. Do you want to download it? Press B to download it with a browser (faster)."
     if errorlevel 3 goto DOWNLOAD_WITH_BROWSER
     if errorlevel 2 goto DOWNLOAD_SKIP
     if errorlevel 1 goto MODEL_DOWNLOAD
 ) ELSE (
-    echo.
-    choice /C YNB /M "The default model file (gpt4all-lora-quantized-ggml.bin) already exists. Do you want to replace it? Press B to download it with a browser (faster)."
-    if errorlevel 3 goto DOWNLOAD_WITH_BROWSER
-    if errorlevel 2 goto DOWNLOAD_SKIP
-    if errorlevel 1 goto MODEL_DOWNLOAD
+    echo Model already installed
+    goto CONTINUE
 )
 
 :DOWNLOAD_WITH_BROWSER
 start https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin
-echo Link has been opened with the default web browser, make sure to save it into the models folder before continuing. Press any key to continue...
+echo Link has been opened with the default web browser, make sure to save it into the models/llama_cpp folder before continuing. Press any key to continue...
 pause
 goto :CONTINUE
 
 :MODEL_DOWNLOAD
 echo.
 echo Downloading latest model...
-powershell -Command "Invoke-WebRequest -Uri 'https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin' -OutFile %clone_dir%'/models/gpt4all-lora-quantized-ggml.bin'"
+powershell -Command "Invoke-WebRequest -Uri 'https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin' -OutFile %clone_dir%'/models/llama_cpp/gpt4all-lora-quantized-ggml.bin'"
 if errorlevel 1 (
     echo Failed to download model. Please check your internet connection.
     choice /C YN /M "Do you want to try downloading again?"
