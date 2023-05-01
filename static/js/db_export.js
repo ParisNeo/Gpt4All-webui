@@ -1,4 +1,5 @@
 function db_export(){
+    const chatWindow = document.getElementById('chat-window');
     const exportButton = document.getElementById('export-button');
     exportButton.title = "Export database";
     exportButton.addEventListener('click', () => {
@@ -47,7 +48,7 @@ function db_export(){
     function downloadUrl(url) {
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'chat.txt';
+    link.download = 'discussions.json';
     link.click();
     }
     

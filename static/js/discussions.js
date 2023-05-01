@@ -1,6 +1,6 @@
 
 function load_discussion(discussion=0){
-  var container = document.getElementById('chat-window');
+  var chatWindow = document.getElementById('chat-window');
 
   if(discussion)
   {
@@ -24,12 +24,14 @@ function load_discussion(discussion=0){
         const messages = JSON.parse(data);
         console.log(messages)
         // process messages
-        container.innerHTML = '';
+        chatWindow.innerHTML = '';
         messages.forEach(message => {
           console.log(`Adding message ${message.type}`)
           if(message.type==0){
             console.log("Showing message")
             addMessage(message.sender, message.content, message.id, message.rank, true);
+            // scroll to bottom of chat window
+            chatWindow.scrollTop = chatWindow.scrollHeight;
           }
         });
           });
@@ -46,7 +48,7 @@ function load_discussion(discussion=0){
 function populate_discussions_list()
 {
   // Populate discussions list
-  const discussionsList = document.querySelector('#discussions-list');
+  const discussionsList = document.getElementById('discussions-list');
   discussionsList.innerHTML = "";
   fetch('/list_discussions')
     .then(response => response.json())
@@ -151,19 +153,33 @@ function populate_discussions_list()
         });
 
         deleteButton.appendChild(deleteImg);
-        deleteButton.addEventListener('click', () => {
-
-        });
 
         const discussionButton = document.createElement('button');
-        discussionButton.classList.add('bg-gray-400', 'hover:bg-gray-800', 'dark:hover:bg-gray-700', 'text-black', 'dark:text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'ml-2', 'w-full');
+        discussionButton.id = discussion.id;
+        discussionButton.classList.add('isButton', 'hover:bg-gray-800', 'dark:hover:bg-gray-700', 'text-black', 'dark:text-white', 'font-bold', 'py-2', 'px-4', 'rounded', 'ml-2', 'w-full');
         discussionButton.textContent = discussion.title;
         discussionButton.title = "Open discussion";
+        
+        //Indicates currently selected (Active) discussion
         discussionButton.addEventListener('click', () => {
           console.log(`Showing messages for discussion ${discussion.id}`);
           load_discussion(discussion);
+          const btnElList = document.querySelectorAll('.isButton');
+          btnElList.forEach(element => {
+            if (element.classList.contains('activeDiscussion')) {
+              element.classList.remove('activeDiscussion');
+            }
+          });
+          discussionButton.classList.add('activeDiscussion');
         });
-
+        
+        const btnElList = document.querySelectorAll('.isButton');
+        
+        btnElList.forEach(btnEl => {
+          btnEl.addEventListener('click', () => {
+            btnEl.querySelector('activeDiscussion')?.classList.remove('activeDiscussion');
+          });
+        })
 
         buttonWrapper.appendChild(renameButton);
         buttonWrapper.appendChild(deleteButton);
@@ -176,7 +192,6 @@ function populate_discussions_list()
   alert('Failed to get discussions');
   });
 }
-
 
 function populate_menu(){
   // adding export discussion button
@@ -220,8 +235,11 @@ function populate_menu(){
     if (discussionName) {
       const sendbtn = document.querySelector("#submit-input")
       const waitAnimation = document.querySelector("#wait-animation")
+      const stopGeneration = document.querySelector("#stop-generation")
       sendbtn.style.display="none";
       waitAnimation.style.display="block";
+      stopGeneration.style.display="block";
+      
 
       // Add the discussion to the discussion list
       const discussionItem = document.createElement('li');
@@ -238,7 +256,8 @@ function populate_menu(){
           populate_discussions_list()
           sendbtn.style.display="block";
           waitAnimation.style.display="none";
-      })
+          stopGeneration.style.display="none";
+        })
       .catch(error => {
         // Handle any errors that occur
         console.error(error);

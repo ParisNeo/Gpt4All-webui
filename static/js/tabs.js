@@ -40,8 +40,6 @@ fetch('/main')
       populateVoicesList();
     }
 
-    populate_models()
-
   })
   .catch(error => {
     console.error('Error loading main page:', error);

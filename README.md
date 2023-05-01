@@ -6,21 +6,23 @@
 ![GitHub forks](https://img.shields.io/github/forks/nomic-ai/GPT4All-ui)
 [![Discord](https://img.shields.io/discord/1092918764925882418?color=7289da&label=Discord&logo=discord&logoColor=ffffff)](https://discord.gg/4rR282WJb6)
 
-This is a Flask web application that provides a chat UI for interacting with [llamacpp](https://github.com/ggerganov/llama.cpp) based chatbots such as [GPT4all](https://github.com/nomic-ai/gpt4all), vicuna etc...
+This is a Flask web application that provides a chat UI for interacting with [llamacpp](https://github.com/ggerganov/llama.cpp), gpt-j, gpt-q as well as Hugging face based language models uch as [GPT4all](https://github.com/nomic-ai/gpt4all), vicuna etc...
 
-Follow us on our [Discord server](https://discord.gg/4rR282WJb6).
+Follow us on our [Discord Server](https://discord.gg/4rR282WJb6).
 
-Watch install video [Usage Videos](https://www.youtube.com/watch?v=6kKv6ESnwMk&t=1s&ab_channel=ParisNeo)
+Watch Install Video (Outdated, please use "New UI video") [Old Install Video](https://youtu.be/6kKv6ESnwMk)
 
-Watch usage videos [Usage Videos](https://www.youtube.com/watch?v=DCBefhJUUh4&ab_channel=ParisNeo)
+Watch Usage Videos [Usage Video](https://youtu.be/DCBefhJUUh4)
 
-Watch settings videos [Usage Videos](https://www.youtube.com/watch?v=7KwR2vdt1t4&t=63s&ab_channel=ParisNeo)
+Watch Settings Video [Settings Video](https://youtu.be/7KwR2vdt1t4)
 
-![image](https://user-images.githubusercontent.com/58695202/233015758-2396925c-1721-4a0e-81d1-dcc181a6017b.png)
+Watch New UI Video [New UI + Install](https://youtu.be/M7NFajCyZKs)
+
+![image](https://i.gyazo.com/ef94a5ac9169467a1aec228ef8c36c66.gif)
 
 GPT4All is an exceptional language model, designed and developed by Nomic-AI, a proficient company dedicated to natural language processing. The app uses Nomic-AI's advanced library to communicate with the cutting-edge GPT4All model, which operates locally on the user's PC, ensuring seamless and efficient communication.
 
-If you are interested in learning more about this groundbreaking project, visit their [Github repository](https://github.com/nomic-ai/gpt4all), where you can find comprehensive information regarding the app's functionalities and technical details. Moreover, you can delve deeper into the training process and database by going through their detailed Technical report, available for download at [Technical report](https://s3.amazonaws.com/static.nomic.ai/gpt4all/2023_GPT4All_Technical_Report.pdf).
+If you are interested in learning more about this groundbreaking project, visit their [Github Repository](https://github.com/nomic-ai/gpt4all), where you can find comprehensive information regarding the app's functionalities and technical details. Moreover, you can delve deeper into the training process and database by going through their detailed Technical report, available for download at [Technical report](https://s3.amazonaws.com/static.nomic.ai/gpt4all/2023_GPT4All_Technical_Report.pdf).
 
 One of the app's impressive features is that it allows users to send messages to the chatbot and receive instantaneous responses in real time, ensuring a seamless user experience. Additionally, the app facilitates the exportation of the entire chat history in either text or JSON format, providing greater flexibility to the users.
 
@@ -46,145 +48,17 @@ Make sure that your CPU supports `AVX2` instruction set. Without it, this applic
 
 ### Automatic install
 
-1. Open directory on your computer where you want to download/install this application  (This will create new directory: `/gpt4all-ui/`. Make sure a folder with this name does not exist in this direcotry.)
-2. Press and hold `Shift` on your keyboard and `Right click` with your mouse inside a folder. Select from a menu `Open Terminal` or `Open to powershell windows here` (This command can hide under `Show more options` in Windows 11).
-3. Copy and paste this command and press enter: 
-```
-mkdir gpt4all-ui & curl https://raw.githubusercontent.com/nomic-ai/gpt4all-ui/main/webui.bat -o ./gpt4all-ui/webui.bat ; pushd ./gpt4all/ ; Invoke-Expression -Command "./webui.bat"
-```
+It is advised to have python 3.10 (The official one, not the one from Microsoft Store) and git installed. Although it should work with any python from 3.7, it is advised to use 3.10 to have the full support as some extensions like the future stable diffusion extension will force you to have 3.10.
+
+1. [Go to the latest release section](https://github.com/nomic-ai/gpt4all-ui/releases)
+2. Download the `webui.bat` if you are on windows or `webui.sh` if you are on linux/mac. Put this file in a folder for example `/gpt4all-ui/`, because when you run it, all the necessary files will be downloaded into that folder.
+3. Run the script and wait. It should install everything and start the chatbot. Chatbot will be avaliable from web browser `http://localhost:9600`.
 > **Note**
->
-> This command creates new directory `/gpt4all-ui/`, downloads a file [webui.bat](https://raw.githubusercontent.com/nomic-ai/gpt4all-ui/main/webui.bat), changes current work directory to `/gpt4all-ui/` and executes webui.bat that downloads and installs everything that is needed.
+> During installtion, it may ask you to download a model. Feel free to accept or to download your own models depending on the backends you are using.
 
-4. Follow instructions on screen until it launches webui.
-5. To relaunch application double click on `webui.bat` file from Windows explorer as normal user.
+Once installed, you can run the app by using `webui.bat` or `webui.sh`. The script will check for any new updates
 
-### Manual Simple install:
-
-1. Download this repository .zip:
-
-![image](https://user-images.githubusercontent.com/80409979/232210909-0ce3dc80-ed34-4b32-b828-e124e3df3ff1.png)
-
-2. Extract contents into a folder.
-3. Install/run application by double clicking on `webui.bat` file from Windows Explorer as normal user.
-
-### Manual Advanced mode:
-
-1. Install [git](https://git-scm.com/download/win).
-2. Open Terminal/PowerShell and navigate to a folder you want to clone this repository.
-
-```bash
-git clone https://github.com/nomic-ai/gpt4all-ui.git
-```
-
-4. Install/run application by double clicking on `webui.bat` file from Windows explorer as normal user.
-
-## Linux
-
-### Automatic install
-
-1. Make sure you have installed `curl`. It is needed for the one-liner to work.
-
-`Debian-based:`
-```
-sudo apt install curl 
-```
-`Red Hat-based:`
-```
-sudo dnf install curl 
-```
-`Arch-based:`
-```
-sudo pacman -S curl 
-```
-2. Open terminal/console copy and paste this command and press enter: 
-```
-mkdir -p ~/gpt4all-ui && curl -L https://raw.githubusercontent.com/nomic-ai/gpt4all-ui/main/webui.sh -o ~/gpt4all-ui/webui.sh && chmod +x ~/gpt4all-ui/webui.sh && cd ~/gpt4all-ui && ./webui.sh
-```
-> **Note**
->
-> This command creates new directory `/gpt4all-ui/` in your /home/ direcory, downloads a file [webui.sh](https://raw.githubusercontent.com/nomic-ai/gpt4all-ui/main/webui.sh), makes file executable and executes webui.sh that downloads and installs everything that is needed.
-
-3. Follow instructions on screen until it launches webui.
-4. To relaunch application: 
-```
-bash webui.sh
-```
-
-### Manual Simple install:
-
-1. Download this repository .zip:
-
-![image](https://user-images.githubusercontent.com/80409979/232210909-0ce3dc80-ed34-4b32-b828-e124e3df3ff1.png)
-
-2. Extract contents into a folder.
-3. Install/run application from terminal/console: 
-```
-bash webui.sh
-```
-### Manual Advanced mode:
-
-1. Open terminal/console and install dependencies:
-
-`Debian-based:`
-```
-sudo apt install curl git python3 python3-venv
-```
-`Red Hat-based:`
-```
-sudo dnf install curl git python3
-```
-`Arch-based:`
-```
-sudo pacman -S curl git python3
-```
-
-2. Clone repository:
-
-```bash
-git clone https://github.com/nomic-ai/gpt4all-ui.git
-```
-```bash
-cd gpt4all-ui
-```
-
-3. Install/run application:
-
-```bash
-bash ./webui.sh
-```
-
-## MacOS
-
-1. Open terminal/console and install `brew`:
-
-```
-$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-2. Install dependencies:
-
-```
-brew install git python3
-```
-
-3. Clone repository:
-
-```bash
-git clone https://github.com/nomic-ai/gpt4all-ui.git
-```
-```bash
-cd gpt4all-ui
-```
-
-4. Install/run application:
-
-```bash
-bash ./webui.sh
-```
-
-On Linux/MacOS, if you have issues, refer to the details presented [here](docs/Linux_Osx_Install.md)
-These scripts will create a Python virtual environment and install the required dependencies. It will also download the models and install them.
+[If you want to use a more advanced install procedure, please click here](docs/AdvancedInstallInstructions.md)
 
 ## Docker Compose
 Make sure to put models the inside the `models` directory.
@@ -216,28 +90,67 @@ After that, you can open the application in your browser on http://localhost:960
 
 Now you're ready to work!
 
+# Supported backends
+Two backends are now supported:
+1 - [The llama_cpp backend](https://github.com/nomic-ai/pygpt4all)
+2 - [The GPT-j backend](https://github.com/marella/gpt4all-j)
+3 - Hugging face's Transformers (under construction)
+
 # Supported models
 You can also refuse to download the model during the install procedure and download it manually.
 
 **For now, we support ggml models that work "out-of-the-box" (tested on Windows 11 and Ubuntu 22.04.2), such as:**
 
+## LLama_cpp models
 - [GPT4ALL 7B](https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin) or visit [repository](https://huggingface.co/ParisNeo/GPT4All)
-- [GPT4ALL 7B unfiltered](https://huggingface.co/ParisNeo/GPT4All/blob/main/gpt4all-lora-unfiltered-quantized.new.bin) or visit [repository](https://huggingface.co/ParisNeo/GPT4All)
+- [GPT4ALL 7B unfiltered](https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-unfiltered-quantized.new.bin) or visit [repository](https://huggingface.co/ParisNeo/GPT4All)
 - [Vicuna 7B rev 1](https://huggingface.co/eachadea/legacy-ggml-vicuna-7b-4bit/resolve/main/ggml-vicuna-7b-4bit-rev1.bin) or visit [repository](https://huggingface.co/eachadea/legacy-ggml-vicuna-7b-4bit)  
 - [Vicuna 13B rev 1](https://huggingface.co/eachadea/ggml-vicuna-13b-4bit/resolve/main/ggml-vicuna-13b-4bit-rev1.bin) or visit [repository](https://huggingface.co/eachadea/ggml-vicuna-13b-4bit)
 
-**These models don't work "out-of-the-box" and need to be converted to the right ggml type:**
+- [ggml-gpt4all-j-v1.3-groovy](https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin)
+- [ggml-gpt4all-j-v1.2-jazzy](https://gpt4all.io/models/ggml-gpt4all-j-v1.2-jazzy.bin)
+- [ggml-gpt4all-l13b-snoozy](https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin)
 
+- [ggml-gpt4all-j-v1.1-breezy](https://gpt4all.io/models/ggml-gpt4all-j-v1.1-breezy.bin)
+- [ggml-gpt4all-j](https://gpt4all.io/models/ggml-gpt4all-j.bin)
+- [ggml-vicuna-7b-1.1-q4_2](https://gpt4all.io/models/ggml-vicuna-7b-1.1-q4_2.bin)
+- [ggml-vicuna-13b-1.1-q4_2](https://gpt4all.io/models/ggml-vicuna-13b-1.1-q4_2.bin)
+
+
+We also support GPT-j models out of the box
+
+## GPT-j models
+- [GPT-j 7B](https://gpt4all.io/models/ggml-gpt4all-j.bin)
+
+
+**These models don't work "out-of-the-box" and need to be converted to the right ggml type:**
+## LLAMACPP models
 - [Vicuna 7B](https://huggingface.co/eachadea/legacy-ggml-vicuna-7b-4bit/resolve/main/ggml-vicuna-7b-4bit.bin) or visit [repository](https://huggingface.co/eachadea/legacy-ggml-vicuna-7b-4bit)
 - [Vicuna 13B q4 v0](https://huggingface.co/eachadea/ggml-vicuna-13b-1.1/resolve/main/ggml-vicuna-13b-1.1-q4_0.bin) or visit [repository](https://huggingface.co/eachadea/ggml-vicuna-13b-1.1/)
 - [Vicuna 13B q4 v1](https://huggingface.co/eachadea/ggml-vicuna-13b-1.1/resolve/main/ggml-vicuna-13b-1.1-q4_1.bin) or visit [repository](https://huggingface.co/eachadea/ggml-vicuna-13b-1.1/)
 - [ALPACA 7B](https://huggingface.co/Sosaka/Alpaca-native-4bit-ggml/resolve/main/ggml-alpaca-7b-q4.bin) or visit [repository](https://huggingface.co/Sosaka/Alpaca-native-4bit-ggml/)
 
-Just download the model into the `models` folder and start using the tool.
+Just download the model into the `models/<backend name>` folder and start using the tool.
+# Personalities
 
+You can find hundreds of personalities in my personal [Personalities repository](https://github.com/ParisNeo/PyAIPersonality). This new personalities format can be used for any third party applications, it builds a simple structure and format to define personalities. This format is evolutive and new fields and assets will be added in the future like personality voice or 3d animated character with prebaked motions that should allow AI to be more alive. The format is baked to support old versions while adding new capabilities for new versions making it ideal as a personality defintition format.
+
+## Personality install
+if you are on windows you can install new personalities directly using the `add_personality.bat` code:
+```bash
+add_personality.bat
+```
+
+```bash
+bash add_personality.sh
+```
+
+Please don't forget to take time and give a Star if you like the project. This helps the visibility of the project.
 # Build custom personalities and share them
 
-To build a new personality, create a new file with the name of the personality inside the `personalities` folder. You can look at `gpt4all_chatbot.yaml` file as an example. Then you can fill the fields with the description, conditionning, etc. of your personality. Then save the file.
+To build a new personality, create a new file with the name of the personality inside the `personalities` folder. You can look at `gpt4all` personality as an example. Then you can fill the fields with the description, conditionning, etc. of your personality. Add a logo to your personality (avatar). Then save the file. I personally use stable diffusion to generate the avatars.
+
+
 
 You can launch the application using the personality in two ways:
 - Change it permanently by putting the name of the personality inside your configuration file

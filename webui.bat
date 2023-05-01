@@ -35,7 +35,27 @@ echo HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 echo HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 echo HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
 
+echo Checking internet connection
 
+ping google.com -n 1 >nul 2>&1
+if errorlevel 1 (
+    echo Internet connection not available
+    goto NO_INTERNET
+) else (
+	goto INTERNET_OK
+)
+:NO_INTERNET
+
+if exist GPT4All (
+    echo GPT4All folder found
+    cd GPT4All
+    set /p="Activating virtual environment ..." <nul
+    call env\Scripts\activate.bat
+)
+goto END
+
+:INTERNET_OK
+echo \e[32mInternet connection working fine
 
 
 REM Check if Git is installed
@@ -74,29 +94,33 @@ exit /b 1
 :GIT_SKIP
 
 REM Check if repository exists 
-git rev-parse --is-inside-work-tree 
-if errorlevel 1 goto :CLONE_REPO
-if errorlevel = 0 goto :PULL_CHANGES
+echo checking git repository
+if exist ".git" (
+    goto :PULL_CHANGES
+) else (
+    goto :CLONE_REPO
+)
+
 :PULL_CHANGES
 echo Pulling latest changes 
 git pull origin main
-goto :GET_PERSONALITIES
+goto :CHECK_PYTHON_INSTALL
 
 :CLONE_REPO
-echo Cloning repository...
-git init
-git remote add origin https://github.com/nomic-ai/gpt4all-ui.git
-git fetch
-git reset origin/main  
-git checkout -t origin/main
-git pull origin main
-goto :GET_PERSONALITIES
-
-:GET_PERSONALITIES
-REM Download latest personalities
-if not exist tmp\personalities git clone https://github.com/ParisNeo/GPT4All_Personalities.git tmp\personalities
-copy tmp\personalities\* personalities
-goto :CHECK_PYTHON_INSTALL
+REM Check if repository exists 
+if exist GPT4All (
+    echo GPT4All folder found
+    cd GPT4All
+    echo Pulling latest changes 
+    git pull
+) else (
+    echo Cloning repository...
+    rem Clone the Git repository into a temporary directory
+    git clone https://github.com/nomic-ai/gpt4all-ui.git ./GPT4All
+    cd GPT4All
+    echo Pulling latest changes 
+    git pull
+)
 
 :CHECK_PYTHON_INSTALL
 REM Check if Python is installed
@@ -238,7 +262,8 @@ if not exist \models (
     md \models
 )
 
-if not exist ./models/llama_cpp/gpt4all-lora-quantized-ggml.bin (
+dir ".\models\llama_cpp\*.bin" /b 2>&1
+if errorlevel 1 (
     echo.
     choice /C YNB /M "The default model file (gpt4all-lora-quantized-ggml.bin) does not exist. Do you want to download it? Press B to download it with a browser (faster)."
     if errorlevel 3 goto DOWNLOAD_WITH_BROWSER
@@ -258,6 +283,7 @@ goto :CONTINUE
 :MODEL_DOWNLOAD
 echo.
 echo Downloading latest model...
+set clone_dir=%cd%
 powershell -Command "Invoke-WebRequest -Uri 'https://huggingface.co/ParisNeo/GPT4All/resolve/main/gpt4all-lora-quantized-ggml.bin' -OutFile %clone_dir%'/models/llama_cpp/gpt4all-lora-quantized-ggml.bin'"
 if errorlevel 1 (
     echo Failed to download model. Please check your internet connection.

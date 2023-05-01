@@ -12,7 +12,7 @@ n_predict: 1024
 nb_messages_to_remember: 5
 personality_language: english
 personality_category: general
-personality: gpt4all_chatbot
+personality: gpt4all
 port: 9600
 repeat_last_n: 40
 repeat_penalty: 1.2
@@ -23,3 +23,4 @@ top_p: 0.95
 voice: ""
 use_gpu: false # Not active yet
 auto_read: false
+use_avx2: true # By default we require using avx2 but if not supported, make sure you remove it from here
