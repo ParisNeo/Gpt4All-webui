@@ -1,3 +1,4 @@
+tqdm
 flask
 flask_socketio
 nomic
@@ -6,5 +7,6 @@ pyyaml
 markdown
 pyllamacpp==2.0.0
 gpt4all-j 
+gpt4all
 transformers
-pyaipersonality
+pyaipersonality>=0.0.11

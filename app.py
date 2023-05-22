@@ -2,7 +2,7 @@
 # Project       : GPT4ALL-UI
 # Author        : ParisNeo with the help of the community
 # Supported by Nomic-AI
-# Licence       : Apache 2.0
+# license       : Apache 2.0
 # Description   : 
 # A front end Flask application for llamacpp models.
 # The official GPT4All Web ui
@@ -20,10 +20,12 @@ import argparse
 import json
 import re
 import traceback
-import threading
 import sys
+from tqdm import tqdm
+import subprocess
+import signal
 from pyaipersonality import AIPersonality
-from pyGpt4All.db import DiscussionsDB, Discussion
+from gpt4all_api.db import DiscussionsDB, Discussion
 from flask import (
     Flask,
     Response,
@@ -36,33 +38,48 @@ from flask import (
 from flask_socketio import SocketIO, emit
 from pathlib import Path
 import gc
+import yaml
 from geventwebsocket.handler import WebSocketHandler
 from gevent.pywsgi import WSGIServer
+import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 app = Flask("GPT4All-WebUI", static_url_path="/static", static_folder="static")
-socketio = SocketIO(app, async_mode='gevent')
+socketio = SocketIO(app,  cors_allowed_origins="*", async_mode='gevent', ping_timeout=200, ping_interval=15)
+
 app.config['SECRET_KEY'] = 'secret!'
 # Set the logging level to WARNING or higher
 logging.getLogger('socketio').setLevel(logging.WARNING)
 logging.getLogger('engineio').setLevel(logging.WARNING)
-# Suppress Flask's default console output
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
+logging.basicConfig(level=logging.WARNING)
 
 import time
-from pyGpt4All.config import load_config, save_config
-from pyGpt4All.api import GPT4AllAPI
+from gpt4all_api.config import load_config, save_config
+from gpt4all_api.api import GPT4AllAPI
 import shutil
 import markdown
 
 
 class Gpt4AllWebUI(GPT4AllAPI):
-    def __init__(self, _app, _socketio, config:dict, personality:dict, config_file_path) -> None:
-        super().__init__(config, personality, config_file_path)
+    def __init__(self, _app, _socketio, config:dict, config_file_path) -> None:
+        super().__init__(config, _socketio, config_file_path)
 
         self.app = _app
         self.cancel_gen = False
-        self.socketio = _socketio
+        
+
+        if "use_new_ui" in self.config:
+            if self.config["use_new_ui"]:
+                app.template_folder = "web/dist"
+
+
+        # =========================================================================================
+        # Endpoints
+        # =========================================================================================
 
 
         self.add_endpoint(
@@ -94,6 +111,11 @@ class Gpt4AllWebUI(GPT4AllAPI):
         
         
         self.add_endpoint("/", "", self.index, methods=["GET"])
+        self.add_endpoint("/<path:filename>", "serve_static", self.serve_static, methods=["GET"])
+        self.add_endpoint("/personalities/<path:filename>", "serve_personalities", self.serve_personalities, methods=["GET"])
+        self.add_endpoint("/outputs/<path:filename>", "serve_outputs", self.serve_outputs, methods=["GET"])
+
+        
         self.add_endpoint("/export_discussion", "export_discussion", self.export_discussion, methods=["GET"])
         self.add_endpoint("/export", "export", self.export, methods=["GET"])
         self.add_endpoint(
@@ -102,6 +124,7 @@ class Gpt4AllWebUI(GPT4AllAPI):
         self.add_endpoint("/stop_gen", "stop_gen", self.stop_gen, methods=["GET"])
 
         self.add_endpoint("/rename", "rename", self.rename, methods=["POST"])
+        self.add_endpoint("/edit_title", "edit_title", self.edit_title, methods=["POST"])
         self.add_endpoint(
             "/load_discussion", "load_discussion", self.load_discussion, methods=["POST"]
         )
@@ -140,6 +163,11 @@ class Gpt4AllWebUI(GPT4AllAPI):
         self.add_endpoint(
             "/get_config", "get_config", self.get_config, methods=["GET"]
         )
+        
+        self.add_endpoint(
+            "/get_available_models", "get_available_models", self.get_available_models, methods=["GET"]
+        )
+
 
         self.add_endpoint(
             "/extensions", "extensions", self.extensions, methods=["GET"]
@@ -160,44 +188,192 @@ class Gpt4AllWebUI(GPT4AllAPI):
             "/help", "help", self.help, methods=["GET"]
         )
         
+        self.add_endpoint(
+            "/get_generation_status", "get_generation_status", self.get_generation_status, methods=["GET"]
+        )
         
+        self.add_endpoint(
+            "/update_setting", "update_setting", self.update_setting, methods=["POST"]
+        )
+        self.add_endpoint(
+            "/apply_settings", "apply_settings", self.apply_settings, methods=["POST"]
+        )
         
-        # Socket IO stuff    
-        @socketio.on('connect')
-        def connect():
-            print('Client connected')
 
-        @socketio.on('disconnect')
-        def disconnect():
-            print('Client disconnected')
+        self.add_endpoint(
+            "/save_settings", "save_settings", self.save_settings, methods=["POST"]
+        )
+
+        self.add_endpoint(
+            "/get_current_personality", "get_current_personality", self.get_current_personality, methods=["GET"]
+        )
         
-        @socketio.on('generate_msg')
-        def generate_msg(data):
-            if self.current_discussion is None:
-                if self.db.does_last_discussion_have_messages():
-                    self.current_discussion = self.db.create_discussion()
+
+        self.add_endpoint(
+            "/get_all_personalities", "get_all_personalities", self.get_all_personalities, methods=["GET"]
+        )
+        
+        self.add_endpoint(
+            "/reset", "reset", self.reset, methods=["GET"]
+        )
+        
+        
+    def reset(self):
+        os.kill(os.getpid(), signal.SIGINT)  # Send the interrupt signal to the current process
+        subprocess.Popen(['python', 'your_app.py'])  # Restart the app using subprocess
+
+        return 'App is resetting...'
+
+    def save_settings(self):
+        save_config(self.config, self.config_file_path)
+        if self.config["debug"]:
+            print("Configuration saved")
+        # Tell that the setting was changed
+        self.socketio.emit('save_settings', {"status":True})
+        return jsonify({"status":True})
+    
+
+    def get_current_personality(self):
+        return jsonify({"personality":self.personality.as_dict()})
+    
+    def get_all_personalities(self):
+        personalities_folder = Path("./personalities")
+        personalities = {}
+        for language_folder in personalities_folder.iterdir():
+            if language_folder.is_dir():
+                personalities[language_folder.name] = {}
+                for category_folder in language_folder.iterdir():
+                    if category_folder.is_dir():
+                        personalities[language_folder.name][category_folder.name] = []
+                        for personality_folder in category_folder.iterdir():
+                            if personality_folder.is_dir():
+                                personality_info = {}
+                                config_path = personality_folder / 'config.yaml'
+                                with open(config_path) as config_file:
+                                    config_data = yaml.load(config_file, Loader=yaml.FullLoader)
+                                    personality_info['name'] = personality_folder.name
+                                    personality_info['description'] = config_data['description']
+                                    personality_info['author'] = config_data['creator']
+                                    personality_info['version'] = config_data['version']
+                                scripts_path = personality_folder / 'scripts'
+                                personality_info['has_scripts'] = scripts_path.is_dir()
+                                assets_path = personality_folder / 'assets'
+                                logo_path = assets_path / 'logo.png'
+                                gif_logo_path = assets_path / 'logo.gif'
+                                personality_info['has_logo'] = logo_path.is_file() or gif_logo_path.is_file()
+                                if logo_path.is_file():
+                                    personality_info['icon_file'] = 'logo.png'
+                                elif gif_logo_path.is_file():
+                                    personality_info['icon_file'] = 'logo.gif'
+                                personalities[language_folder.name][category_folder.name].append(personality_info)
+
+        return json.dumps(personalities)
+    # Settings (data: {"setting_name":<the setting name>,"setting_value":<the setting value>})
+    def update_setting(self):
+        data = request.get_json()
+        setting_name = data['setting_name']
+        if setting_name== "temperature":
+            self.config["temperature"]=float(data['setting_value'])
+        elif setting_name== "n_predict":
+            self.config["n_predict"]=int(data['setting_value'])
+        elif setting_name== "top_k":
+            self.config["top_k"]=int(data['setting_value'])
+        elif setting_name== "top_p":
+            self.config["top_p"]=float(data['setting_value'])
+            
+        elif setting_name== "repeat_penalty":
+            self.config["repeat_penalty"]=float(data['setting_value'])
+        elif setting_name== "repeat_last_n":
+            self.config["repeat_last_n"]=int(data['setting_value'])
+
+        elif setting_name== "n_threads":
+            self.config["n_threads"]=int(data['setting_value'])
+        elif setting_name== "ctx_size":
+            self.config["ctx_size"]=int(data['setting_value'])
+
+
+        elif setting_name== "language":
+            self.config["language"]=data['setting_value']
+
+        elif setting_name== "personality_language":
+            back_language = self.config["personality_language"]
+            if self.config["personality_language"]!=data['setting_value']:
+                self.config["personality_language"]=data['setting_value']
+                cats = self.list_personalities_categories()
+                if len(cats)>0:
+                    back_category = self.config["personality_category"]
+                    self.config["personality_category"]=cats[0]
+                    pers = json.loads(self.list_personalities().data.decode("utf8"))
+                    if len(pers)>0:
+                        self.config["personality"]=pers[0]
+                        personality_fn = f"personalities/{self.config['personality_language']}/{self.config['personality_category']}/{self.config['personality']}"
+                        self.personality.load_personality(personality_fn)
+                    else:
+                        self.config["personality_language"]=back_language
+                        self.config["personality_category"]=back_category
+                        return jsonify({'setting_name': data['setting_name'], "status":False})
                 else:
-                    self.current_discussion = self.db.load_last_discussion()
+                    self.config["personality_language"]=back_language
+                    return jsonify({'setting_name': data['setting_name'], "status":False})
+                
+        elif setting_name== "personality_category":
+            back_category = self.config["personality_category"]
+            if self.config["personality_category"]!=data['setting_value']:
+                self.config["personality_category"]=data['setting_value']
+                pers = json.loads(self.list_personalities().data.decode("utf8"))
+                if len(pers)>0:
+                    self.config["personality"]=pers[0]
+                    personality_fn = f"personalities/{self.config['personality_language']}/{self.config['personality_category']}/{self.config['personality']}"
+                    self.personality.load_personality(personality_fn)
+                    if self.config["debug"]:
+                        print(self.personality)
+                else:
+                    self.config["personality_category"]=back_category
+                    return jsonify({'setting_name': data['setting_name'], "status":False})
 
-            message = data["prompt"]
-            message_id = self.current_discussion.add_message(
-                "user", message, parent=self.current_message_id
-            )
-            message = data["prompt"]
-            self.current_message_id = message_id
-            tpe = threading.Thread(target=self.parse_to_prompt_stream, args=(message, message_id))
-            tpe.start()
-
-        @socketio.on('generate_msg_from')
-        def handle_connection(data):
-            message_id = int(data['id'])
-            message = data["prompt"]
-            self.current_message_id = message_id
-            tpe = threading.Thread(target=self.parse_to_prompt_stream, args=(message, message_id))
-            tpe.start()
+        elif setting_name== "personality":
+            self.config["personality"]=data['setting_value']
+            personality_fn = f"personalities/{self.config['personality_language']}/{self.config['personality_category']}/{self.config['personality']}"
+            self.personality.load_personality(personality_fn)
+        elif setting_name== "override_personality_model_parameters":
+            self.config["override_personality_model_parameters"]=bool(data['setting_value'])
+            
+            
 
 
+        elif setting_name== "model":
+            self.config["model"]=data['setting_value']
+            print("update_settings : New model selected")            
 
+        elif setting_name== "backend":
+            if self.config['backend']!= data['setting_value']:
+                print("New backend selected")
+                self.config["backend"]=data['setting_value']
+                try:
+                    self.backend = self.process.load_backend(self.config["backend"])
+                except Exception as ex:
+                    print("Couldn't build backend")
+                    return jsonify({'setting_name': data['setting_name'], "status":False, 'error':str(ex)})
+            else:
+                if self.config["debug"]:
+                    print(f"Configuration {data['setting_name']} set to {data['setting_value']}")
+                return jsonify({'setting_name': data['setting_name'], "status":True})
+
+        else:
+            if self.config["debug"]:
+                print(f"Configuration {data['setting_name']} couldn't be set to {data['setting_value']}")
+            return jsonify({'setting_name': data['setting_name'], "status":False})
+
+        if self.config["debug"]:
+            print(f"Configuration {data['setting_name']} set to {data['setting_value']}")
+            
+        print("Configuration updated")
+        # Tell that the setting was changed
+        return jsonify({'setting_name': data['setting_name'], "status":True})
+
+
+    def apply_settings(self):
+        return jsonify(self.process.set_config(self.config))
 
     def list_backends(self):
         backends_dir = Path('./backends')  # replace with the actual path to the models folder
@@ -206,9 +382,11 @@ class Gpt4AllWebUI(GPT4AllAPI):
 
 
     def list_models(self):
-        models_dir = Path('./models')/self.config["backend"]  # replace with the actual path to the models folder
-        models = [f.name for f in models_dir.glob(self.backend.file_extension)]
-        return jsonify(models)
+        if self.backend is not None:
+            models = self.backend.list_models(self.config)
+            return jsonify(models)
+        else:
+            return jsonify([])
     
 
     def list_personalities_languages(self):
@@ -222,8 +400,13 @@ class Gpt4AllWebUI(GPT4AllAPI):
         return jsonify(personalities_categories)
     
     def list_personalities(self):
-        personalities_dir = Path(f'./personalities/{self.config["personality_language"]}/{self.config["personality_category"]}')  # replace with the actual path to the models folder
-        personalities = [f.stem for f in personalities_dir.iterdir() if f.is_dir()]
+        try:
+            personalities_dir = Path(f'./personalities/{self.config["personality_language"]}/{self.config["personality_category"]}')  # replace with the actual path to the models folder
+            personalities = [f.stem for f in personalities_dir.iterdir() if f.is_dir()]
+        except Exception as ex:
+            personalities=[]
+            if self.config["debug"]:
+                print(f"No personalities found. Using default one {ex}")
         return jsonify(personalities)
 
     def list_languages(self):
@@ -269,19 +452,33 @@ class Gpt4AllWebUI(GPT4AllAPI):
 
     def index(self):
         return render_template("index.html")
+    
+    def serve_static(self, filename):
+        root_dir = os.getcwd()
+        if "use_new_ui" in self.config:
+            if self.config["use_new_ui"]:
+                path = os.path.join(root_dir, 'web/dist/')+"/".join(filename.split("/")[:-1])
+            else:
+                path = os.path.join(root_dir, 'static/')+"/".join(filename.split("/")[:-1])
+        else:
+            path = os.path.join(root_dir, 'static/')+"/".join(filename.split("/")[:-1])
+                            
+        fn = filename.split("/")[-1]
+        return send_from_directory(path, fn)
 
-    def format_message(self, message):
-        # Look for a code block within the message
-        pattern = re.compile(r"(```.*?```)", re.DOTALL)
-        match = pattern.search(message)
+    def serve_personalities(self, filename):
+        root_dir = os.getcwd()
+        path = os.path.join(root_dir, 'personalities/')+"/".join(filename.split("/")[:-1])
+                            
+        fn = filename.split("/")[-1]
+        return send_from_directory(path, fn)
 
-        # If a code block is found, replace it with a <code> tag
-        if match:
-            code_block = match.group(1)
-            message = message.replace(code_block, f"<code>{code_block[3:-3]}</code>")
-
-        # Return the formatted message
-        return message
+    def serve_outputs(self, filename):
+        root_dir = os.getcwd()
+        path = os.path.join(root_dir, 'outputs/')+"/".join(filename.split("/")[:-1])
+                            
+        fn = filename.split("/")[-1]
+        return send_from_directory(path, fn)
 
     def export(self):
         return jsonify(self.db.export_to_json())
@@ -290,66 +487,31 @@ class Gpt4AllWebUI(GPT4AllAPI):
         return jsonify({"discussion_text":self.get_discussion_to()})
     
 
-    def parse_to_prompt_stream(self, message, message_id):
-        bot_says = ""
-
-        # send the message to the bot
-        print(f"Received message : {message}")
-        if self.current_discussion:
-            # First we need to send the new message ID to the client
-            response_id = self.current_discussion.add_message(
-                self.personality.name, "", parent = message_id
-            )  # first the content is empty, but we'll fill it at the end
-            socketio.emit('infos',
-                    {
-                        "type": "input_message_infos",
-                        "bot": self.personality.name,
-                        "user": self.personality.user_name,
-                        "message":message,#markdown.markdown(message),
-                        "id": message_id,
-                        "response_id": response_id,
-                    }
-            );
-
-
-            # prepare query and reception
-            self.discussion_messages = self.prepare_query(message_id)
-            self.prepare_reception()
-            self.generating = True
-            # app.config['executor'] = ThreadPoolExecutor(max_workers=1)
-            # app.config['executor'].submit(self.generate_message)
-            print("## Generating message ##")
-            self.generate_message()
-
-            print()
-            print("## Done ##")
-            print()
-
-            # Send final message
-            self.socketio.emit('final', {'data': self.bot_says})
-
-            self.current_discussion.update_message(response_id, self.bot_says)
-            self.full_message_list.append(self.bot_says)
-            self.cancel_gen = False
-            return bot_says
-        else:
-            #No discussion available
-            print()
-            print("## Done ##")
-            print()
-            return ""
+            
+    def get_generation_status(self):
+        return jsonify({"status":self.process.is_generating.value==1}) 
     
-     
     def stop_gen(self):
         self.cancel_gen = True
-        return jsonify({"status": "ok"}) 
+        self.process.cancel_generation()
+        print("Stop generation received")
+        return jsonify({"status": "ok"})         
+
            
     def rename(self):
         data = request.get_json()
         title = data["title"]
         self.current_discussion.rename(title)
         return "renamed successfully"
-
+    
+    def edit_title(self):
+        data = request.get_json()
+        title = data["title"]
+        discussion_id = data["id"]
+        self.current_discussion = Discussion(discussion_id, self.db)
+        self.current_discussion.rename(title)
+        return "title renamed successfully"
+    
     def load_discussion(self):
         data = request.get_json()
         if "id" in data:
@@ -362,8 +524,7 @@ class Gpt4AllWebUI(GPT4AllAPI):
             else:
                 self.current_discussion = self.db.create_discussion()
         messages = self.current_discussion.get_messages()
-        #for message in messages:
-        #    message["content"] =  markdown.markdown(message["content"])
+
         
         return jsonify(messages), {'Content-Type': 'application/json; charset=utf-8'}
 
@@ -378,18 +539,28 @@ class Gpt4AllWebUI(GPT4AllAPI):
     def update_message(self):
         discussion_id = request.args.get("id")
         new_message = request.args.get("message")
-        self.current_discussion.update_message(discussion_id, new_message)
-        return jsonify({"status": "ok"})
+        try:
+            self.current_discussion.update_message(discussion_id, new_message)
+            return jsonify({"status": "ok"})
+        except Exception as ex:
+            return jsonify({"status": "nok", "error":str(ex)})
+
 
     def message_rank_up(self):
         discussion_id = request.args.get("id")
-        new_rank = self.current_discussion.message_rank_up(discussion_id)
-        return jsonify({"new_rank": new_rank})
+        try:
+            new_rank = self.current_discussion.message_rank_up(discussion_id)
+            return jsonify({"status": "ok", "new_rank": new_rank})
+        except Exception as ex:
+            return jsonify({"status": "nok", "error":str(ex)})
 
     def message_rank_down(self):
         discussion_id = request.args.get("id")
-        new_rank = self.current_discussion.message_rank_down(discussion_id)
-        return jsonify({"new_rank": new_rank})
+        try:
+            new_rank = self.current_discussion.message_rank_down(discussion_id)
+            return jsonify({"status": "ok", "new_rank": new_rank})
+        except Exception as ex:
+            return jsonify({"status": "nok", "error":str(ex)})
 
     def delete_message(self):
         discussion_id = request.args.get("id")
@@ -403,9 +574,6 @@ class Gpt4AllWebUI(GPT4AllAPI):
     def new_discussion(self):
         title = request.args.get("title")
         timestamp = self.create_new_discussion(title)
-        # app.config['executor'] = ThreadPoolExecutor(max_workers=1)
-        # app.config['executor'].submit(self.create_chatbot)
-        # target=self.create_chatbot()
         
         # Return a success response
         return json.dumps({"id": self.current_discussion.discussion_id, "time": timestamp, "welcome_message":self.personality.welcome_message, "sender":self.personality.name})
@@ -417,13 +585,13 @@ class Gpt4AllWebUI(GPT4AllAPI):
             print("New backend selected")
             
             self.config['backend'] = backend
-            models_dir = Path('./models')/self.config["backend"]  # replace with the actual path to the models folder
-            models = [f.name for f in models_dir.glob(self.backend.file_extension)]
-            if len(models)>0:            
+            backend_ =self.process.load_backend(config["backend"])
+            models = backend_.list_models(self.config)
+            if len(models)>0:      
+                self.backend = backend_
                 self.config['model'] = models[0]
-                self.load_backend(self.BACKENDS_LIST[self.config["backend"]])
                 # Build chatbot
-                self.chatbot_bindings = self.create_chatbot()
+                self.process.set_config(self.config)
                 return jsonify({"status": "ok"})
             else:
                 return jsonify({"status": "no_models_found"})
@@ -434,10 +602,10 @@ class Gpt4AllWebUI(GPT4AllAPI):
         data = request.get_json()
         model =  str(data["model"])
         if self.config['model']!= model:
-            print("New model selected")            
+            print("set_model: New model selected")            
             self.config['model'] = model
             # Build chatbot
-            self.chatbot_bindings = self.create_chatbot()
+            self.process.set_config(self.config)
             return jsonify({"status": "ok"})
 
         return jsonify({"status": "error"})    
@@ -451,11 +619,11 @@ class Gpt4AllWebUI(GPT4AllAPI):
         personality =  str(data["personality"])
         
         if self.config['backend']!=backend or  self.config['model'] != model:
-            print("New model selected")
+            print("update_model_params: New model selected")
             
             self.config['backend'] = backend
             self.config['model'] = model
-            self.create_chatbot()
+            self.process.set_config(self.config)
 
         self.config['personality_language'] = personality_language
         self.config['personality_category'] = personality_category
@@ -463,7 +631,6 @@ class Gpt4AllWebUI(GPT4AllAPI):
 
         personality_fn = f"personalities/{self.config['personality_language']}/{self.config['personality_category']}/{self.config['personality']}"
         print(f"Loading personality : {personality_fn}")
-        self.personality = AIPersonality(personality_fn)
 
         self.config['n_predict'] = int(data["nPredict"])
         self.config['seed'] = int(data["seed"])
@@ -471,13 +638,17 @@ class Gpt4AllWebUI(GPT4AllAPI):
         self.config['voice'] = str(data["voice"])
         self.config['language'] = str(data["language"])
         
-        self.config['temp'] = float(data["temp"])
+        self.config['temperature'] = float(data["temperature"])
         self.config['top_k'] = int(data["topK"])
         self.config['top_p'] = float(data["topP"])
         self.config['repeat_penalty'] = float(data["repeatPenalty"])
         self.config['repeat_last_n'] = int(data["repeatLastN"])
 
         save_config(self.config, self.config_file_path)
+        
+        self.process.set_config(self.config)
+        # Fixed missing argument
+        self.backend = self.process.rebuild_backend(self.config)
 
         print("==============================================")
         print("Parameters changed to:")
@@ -488,7 +659,7 @@ class Gpt4AllWebUI(GPT4AllAPI):
         print(f"\tPersonality:{self.config['personality']}")
         print(f"\tLanguage:{self.config['language']}")
         print(f"\tVoice:{self.config['voice']}")
-        print(f"\tTemperature:{self.config['temp']}")
+        print(f"\tTemperature:{self.config['temperature']}")
         print(f"\tNPredict:{self.config['n_predict']}")
         print(f"\tSeed:{self.config['seed']}")
         print(f"\top_k:{self.config['top_k']}")
@@ -499,6 +670,52 @@ class Gpt4AllWebUI(GPT4AllAPI):
 
         return jsonify({"status":"ok"})
     
+    
+    def get_available_models(self):
+        """Get the available models
+
+        Returns:
+            _type_: _description_
+        """
+        if self.backend is None:
+            return jsonify([])
+        model_list = self.backend.get_available_models()
+
+        models = []
+        for model in model_list:
+            try:
+                filename = model.get('filename',"")
+                server = model.get('server',"")
+                image_url = model.get("image_url", '/icons/default.png')
+                license = model.get("license", 'unknown')
+                owner = model.get("owner", 'unknown')
+                owner_link = model.get("owner_link", 'https://github.com/ParisNeo')
+                filesize = int(model.get('filesize',0))
+                description = model.get('description',"")
+                if server.endswith("/"):
+                    path = f'{server}{filename}'
+                else:
+                    path = f'{server}/{filename}'
+                local_path = Path(f'./models/{self.config["backend"]}/{filename}')
+                is_installed = local_path.exists()
+                models.append({
+                    'title': filename,
+                    'icon': image_url,  # Replace with the path to the model icon
+                    'license': license,
+                    'owner': owner,
+                    'owner_link': owner_link,
+                    'description': description,
+                    'isInstalled': is_installed,
+                    'path': path,
+                    'filesize': filesize,
+                })
+            except Exception as ex:
+                print("#################################")
+                print(ex)
+                print("#################################")
+                print(f"Problem with model : {model}")
+        return jsonify(models)
+
     
     def get_config(self):
         return jsonify(self.config)
@@ -577,6 +794,7 @@ if __name__ == "__main__":
         "--debug",
         dest="debug",
         action="store_true",
+        default=None,
         help="launch Flask server in debug mode",
     )
     parser.add_argument(
@@ -586,30 +804,38 @@ if __name__ == "__main__":
     parser.add_argument(
         "--db_path", type=str, default=None, help="Database path"
     )
-    parser.set_defaults(debug=False)
     args = parser.parse_args()
 
     # The default configuration must be kept unchanged as it is committed to the repository, 
     # so we have to make a copy that is not comitted
+    default_config = load_config(f"configs/default.yaml")
+
     if args.config=="default":
         args.config = "local_default"
         if not Path(f"configs/local_default.yaml").exists():
             print("No local configuration file found. Building from scratch")
             shutil.copy(f"configs/default.yaml", f"configs/local_default.yaml")
+
     config_file_path = f"configs/{args.config}.yaml"
     config = load_config(config_file_path)
+
+    if "version" not in config or int(config["version"])<int(default_config["version"]):
+        #Upgrade old configuration files to new format
+        print("Configuration file is very old. Replacing with default configuration")
+        for key, value in default_config.items():
+            if key not in config:
+                config[key] = value
+        config["version"]=int(default_config["version"])
+        save_config(config, config_file_path)
 
     # Override values in config with command-line arguments
     for arg_name, arg_value in vars(args).items():
         if arg_value is not None:
             config[arg_name] = arg_value
 
-    personality = AIPersonality(f"personalities/{config['personality_language']}/{config['personality_category']}/{config['personality']}")
-
     # executor = ThreadPoolExecutor(max_workers=1)
     # app.config['executor'] = executor
-    bot = Gpt4AllWebUI(app, socketio, config, personality, config_file_path)
-
+    bot = Gpt4AllWebUI(app, socketio, config, config_file_path)
 
     # chong Define custom WebSocketHandler with error handling 
     class CustomWebSocketHandler(WebSocketHandler):
@@ -617,22 +843,18 @@ if __name__ == "__main__":
             # Handle the error here
             print("WebSocket error:", e)
             super().handle_error(environ, start_response, e)
-
-    # chong -add socket server
-    http_server = WSGIServer((config["host"], config["port"]), app, handler_class=CustomWebSocketHandler)
-    http_server = WSGIServer((config["host"], config["port"]), app, handler_class=WebSocketHandler)
     
     url = f'http://{config["host"]}:{config["port"]}'
     
     print(f"Please open your browser and go to {url} to view the ui")
+
+    # chong -add socket server    
+    app.config['debug'] = config["debug"]
+
     if config["debug"]:
-        socketio.run(app,debug=True,  host=config["host"], port=config["port"])
+        print("debug mode:true")    
     else:
-        socketio.run(app, host=config["host"], port=config["port"])
-
-
-
-    # if config["debug"]:
-    #     app.run(debug=True, host=config["host"], port=config["port"])
-    # else:
-    #     app.run(host=config["host"], port=config["port"])
+        print("debug mode:false")
+        
+    http_server = WSGIServer((config["host"], config["port"]), app, handler_class=WebSocketHandler)
+    http_server.serve_forever()

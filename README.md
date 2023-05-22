@@ -5,6 +5,8 @@
 ![GitHub stars](https://img.shields.io/github/stars/nomic-ai/GPT4All-ui)
 ![GitHub forks](https://img.shields.io/github/forks/nomic-ai/GPT4All-ui)
 [![Discord](https://img.shields.io/discord/1092918764925882418?color=7289da&label=Discord&logo=discord&logoColor=ffffff)](https://discord.gg/4rR282WJb6)
+[![Follow me on Twitter](https://img.shields.io/twitter/follow/SpaceNerduino?style=social)](https://twitter.com/SpaceNerduino)
+[![Follow Me on YouTube](https://img.shields.io/badge/Follow%20Me%20on-YouTube-red?style=flat&logo=youtube)](https://www.youtube.com/user/Parisneo)
 
 This is a Flask web application that provides a chat UI for interacting with [llamacpp](https://github.com/ggerganov/llama.cpp), gpt-j, gpt-q as well as Hugging face based language models uch as [GPT4all](https://github.com/nomic-ai/gpt4all), vicuna etc...
 
@@ -39,7 +41,7 @@ It's worth noting that the model has recently been launched, and it's expected t
 
 # Installation and running
 
-Make sure that your CPU supports `AVX2` instruction set. Without it, this application won't run out of the box. To check your CPU features, please visit the website of your CPU manufacturer for more information and look for `Instruction set extension: AVX2`.
+Make sure that your CPU supports `AVX2` instruction set. Without it, this application won't run out of the box (for the pyllamacpp backend). To check your CPU features, please visit the website of your CPU manufacturer for more information and look for `Instruction set extension: AVX2`.
 > **Note**
 >
 >Default model `gpt4all-lora-quantized-ggml.bin` is roughly 4GB in size.
@@ -48,7 +50,9 @@ Make sure that your CPU supports `AVX2` instruction set. Without it, this applic
 
 ### Automatic install
 
-It is advised to have python 3.10 (The official one, not the one from Microsoft Store) and git installed. Although it should work with any python from 3.7, it is advised to use 3.10 to have the full support as some extensions like the future stable diffusion extension will force you to have 3.10.
+> **Note**
+>
+>It is mandatory to have python [3.10](https://www.python.org/downloads/release/python-31010/) (The official one, not the one from Microsoft Store) and [git](https://git-scm.com/download/win) installed.
 
 1. [Go to the latest release section](https://github.com/nomic-ai/gpt4all-ui/releases)
 2. Download the `webui.bat` if you are on windows or `webui.sh` if you are on linux/mac. Put this file in a folder for example `/gpt4all-ui/`, because when you run it, all the necessary files will be downloaded into that folder.
@@ -56,9 +60,10 @@ It is advised to have python 3.10 (The official one, not the one from Microsoft 
 > **Note**
 > During installtion, it may ask you to download a model. Feel free to accept or to download your own models depending on the backends you are using.
 
+
 Once installed, you can run the app by using `webui.bat` or `webui.sh`. The script will check for any new updates
 
-[If you want to use a more advanced install procedure, please click here](docs/AdvancedInstallInstructions.md)
+[If you want to use a more advanced install procedure, please click here](docs/usage/AdvancedInstallInstructions.md)
 
 ## Docker Compose
 Make sure to put models the inside the `models` directory.
@@ -92,9 +97,11 @@ Now you're ready to work!
 
 # Supported backends
 Two backends are now supported:
-1 - [The llama_cpp backend](https://github.com/nomic-ai/pygpt4all)
-2 - [The GPT-j backend](https://github.com/marella/gpt4all-j)
-3 - Hugging face's Transformers (under construction)
+
+1- [The llama_cpp backend by Abdeladim](https://github.com/abdeladim-s/pyllamacpp)
+2- [The GPT-j backend by Abdeladim](https://github.com/abdeladim-s/pygptj)
+3- [The GPT-j backend by marella](https://github.com/marella/gpt4all-j)
+4- Hugging face's Transformers (under construction)
 
 # Supported models
 You can also refuse to download the model during the install procedure and download it manually.
@@ -116,6 +123,11 @@ You can also refuse to download the model during the install procedure and downl
 - [ggml-vicuna-7b-1.1-q4_2](https://gpt4all.io/models/ggml-vicuna-7b-1.1-q4_2.bin)
 - [ggml-vicuna-13b-1.1-q4_2](https://gpt4all.io/models/ggml-vicuna-13b-1.1-q4_2.bin)
 
+- [wizard-vicuna-13B.ggml.q4_2](https://huggingface.co/TheBloke/wizard-vicuna-13B-GGML/resolve/main/wizard-vicuna-13B.ggml.q4_2.bin)
+- [WizardLM-7B-uncensored.ggml.q4_0](https://huggingface.co/TheBloke/WizardLM-7B-uncensored-GGML/resolve/main/WizardLM-7B-uncensored.ggml.q4_0.bin)
+- [wizardLM-7B.ggml.q4_2.bin](https://huggingface.co/TheBloke/wizardLM-7B-GGML/resolve/main/wizardLM-7B.ggml.q4_2.bin)
+
+
 
 We also support GPT-j models out of the box
 
@@ -135,14 +147,18 @@ Just download the model into the `models/<backend name>` folder and start using 
 
 You can find hundreds of personalities in my personal [Personalities repository](https://github.com/ParisNeo/PyAIPersonality). This new personalities format can be used for any third party applications, it builds a simple structure and format to define personalities. This format is evolutive and new fields and assets will be added in the future like personality voice or 3d animated character with prebaked motions that should allow AI to be more alive. The format is baked to support old versions while adding new capabilities for new versions making it ideal as a personality defintition format.
 
-## Personality install
-if you are on windows you can install new personalities directly using the `add_personality.bat` code:
-```bash
-add_personality.bat
-```
+### How to Install Personalities from the Zoo
 
-```bash
-bash add_personality.sh
+1. Navigate to the root directory of your repository.
+2. Run either `installations/add_personality.bat` or `installations/add_personality.sh`, depending on your operating system.
+3. Select the desired language, category, and personality from the provided options.
+4. The selected personality will be added to the list of available options.
+5. Choose the current personality:
+   - Option 1: Use the UI by going to "Settings" and selecting "Personalities".
+   - Option 2: Update the configuration file `configs/default_local.yaml` with the appropriate language, category, and personality name.
+
+Note: Ensure that you have the necessary permissions and dependencies installed before performing the above steps.
+
 ```
 
 Please don't forget to take time and give a Star if you like the project. This helps the visibility of the project.
@@ -179,7 +195,7 @@ To run the Flask server, execute the following command:
 python app.py [--config CONFIG] [--personality PERSONALITY] [--port PORT] [--host HOST] [--temp TEMP] [--n_threads N_THREADS] [--n_predict N_PREDICT] [--top_k TOP_K] [--top_p TOP_P] [--repeat_penalty REPEAT_PENALTY] [--repeat_last_n REPEAT_LAST_N] [--ctx_size CTX_SIZE]
 ```
 
-On Linux/MacOS more details can be found [here](docs/Linux_Osx_Usage.md)
+On Linux/MacOS more details can be found [here](docs/usage/Linux_Osx_Usage.md)
 
 ## Options
 *   `--config`: the configuration file to be used. It contains default configurations. The script parameters will override the configurations inside the configuration file. It must be placed in configs folder (default: default.yaml)
@@ -199,7 +215,7 @@ On Linux/MacOS more details can be found [here](docs/Linux_Osx_Usage.md)
 
 Note: All options are optional and have default values.
 
-Once the server is running, open your web browser and navigate to http://localhost:9600 (or http://your host name:your port number if you have selected different values for those) to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
+Once the server is running, open your web browser and navigate to http://localhost:9600 (or http://your-host-name:your-port-number if you have selected different values for those) to access the chatbot UI. To use the app, open a web browser and navigate to this URL.
 
 Make sure to adjust the default values and descriptions of the options to match your specific application.
 
@@ -213,11 +229,11 @@ Before contributing, please take a moment to review our [code of conduct](./CODE
 
 ### Reporting Bugs
 
-If you find a bug or other issue with our chatbot, please report it by [opening an issue](https://github.com/your-username/your-chatbot/issues/new). Be sure to provide as much detail as possible, including steps to reproduce the issue and any relevant error messages.
+If you find a bug or other issue with our chatbot, please report it by [opening an issue](https://github.com/nomic-ai/gpt4all-ui/issues/new). Be sure to provide as much detail as possible, including steps to reproduce the issue and any relevant error messages.
 
 ### Suggesting Features
 
-If you have an idea for a new feature or improvement to our chatbot, we encourage you to [open an issue](https://github.com/your-username/your-chatbot/issues/new) to discuss it. We welcome feedback and ideas from the community and will consider all suggestions that align with our project goals.
+If you have an idea for a new feature or improvement to our chatbot, we encourage you to [open an issue](https://github.com/nomic-ai/gpt4all-ui/issues/new) to discuss it. We welcome feedback and ideas from the community and will consider all suggestions that align with our project goals.
 
 ### Contributing Code
 
