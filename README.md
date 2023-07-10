@@ -1,4 +1,6 @@
-# Gpt4All Web UI
+# Gpt4All Web UI (Deprecated)
+
+[This project is deprecated and is now replaced by Lord of Large Language Models. check it out here](https://github.com/ParisNeo/lollms-webui)
 
 ![GitHub license](https://img.shields.io/github/license/nomic-ai/GPT4All-ui)
 ![GitHub issues](https://img.shields.io/github/issues/nomic-ai/GPT4All-ui)
